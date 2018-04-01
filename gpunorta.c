@@ -31,7 +31,7 @@ int main( int argc, char const *argv[])
 	   
    //Section for reading in arrays from file
    FILE * fp;
-   fp = fopen("test_corr_matrix_d=200.txt", "r");
+   fp = fopen("test_corr_matrix_d=20.txt", "r");
    if(fp)
       {
         for(int i = 0; i < 20*20; i++)
@@ -43,8 +43,18 @@ int main( int argc, char const *argv[])
       {
         printf("\n ERROR OPENING FILE");
       }
+
+   fclose(fp);
+   fp = fopen("test_corr_matrix_d=200.txt", "r"); 
+   if(fp)
+      {
+        for(int i = 0; i < 200 * 200; i++)
+           {
+              r200[i] = fscanf(fp, "%f");    
+      }
    //free memory
    free(r20);
    free(r200);
+
    
 }
