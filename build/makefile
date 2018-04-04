@@ -3,12 +3,13 @@ INCLUDES=-I../include
 O_FILES=gpunorta.o
 LIBS = -lcusolver -lcudart
 LIBDIRS= -L/usr/local/cuda-9.0/lib64
+CC_FLAGS= -Xcompiler -fopenmp 
 all: $(O_FILES)
-	 $(CC) -o test1 $(O_FILES) $(LIBDIRS) $(LIBS)
+	 $(CC) -o test1 $(O_FILES) $(LIBDIRS) $(LIBS) $(CC_FLAGS) 
 	 
 	
 gpunorta.o: ../src/gpunorta.cu
-	 $(CC) -c ../src/gpunorta.cu -o gpunorta.o $(LIBDIRS) $(INCLUDES) $(LIBS)
+	 $(CC) -c ../src/gpunorta.cu -o gpunorta.o $(LIBDIRS) $(INCLUDES) $(LIBS) 
 	 
 
 clean:
