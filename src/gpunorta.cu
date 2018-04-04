@@ -125,7 +125,7 @@ srcFile.close();
   cusolverDnDpotrf(csrHandle, uplo, r20n, r20Arr, r20n, 
                                       r20work, r20workSize, devInfo); 
 
-  printf("Dev Info: %d", devInfo);
+  printf("Dev Info: %d", *devInfo);
    //fclose(fp);
   /* fp = fopen("test_corr_matrix_d=200.txt", "r"); 
    if(fp)
