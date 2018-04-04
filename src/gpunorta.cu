@@ -27,7 +27,7 @@ int main( int argc, char const *argv[])
  //initialize variables
    //initiliaze arrays for holding input data
    double* r20Arr; 
-   double* r200Arr;
+   //double* r200Arr;
    int r20n = 20;
 
    int r20Size; 
@@ -86,7 +86,8 @@ srcFile.close();
   int r20workSize = 0;
   double* r20work;
   int* devInfo; //used for error checking
-
+  
+  cudaMallocManaged(&devInfo, sizeof(int));
   //double* r200work;
   //create cusolver handle 
   status = cusolverDnCreate(&csrHandle);
@@ -97,7 +98,7 @@ srcFile.close();
   
   //float r200work;
   status = cusolverDnDpotrf_bufferSize(csrHandle, 
-                                uplo, r20n, r20Arr, r20n, r20workSize);
+                                uplo, r20n, r20Arr, r20n, &r20workSize);
   assert(CUSOLVER_STATUS_SUCCESS == status );
 
   //cusolverDnSpotrf_bufferSize(csrHandle, 
