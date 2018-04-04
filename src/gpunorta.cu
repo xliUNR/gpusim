@@ -28,22 +28,19 @@ int main( int argc, char const *argv[])
    //initiliaze arrays for holding input data
    double* r20Arr; 
    double* r200Arr;
-   
+   int r20n = 20;
 
    int r20Size, r200Size;
    ifstream srcFile;
    float a;
-   r20n = 20;
+   
    //r200n = 200;
    r20Size = r20n*r20n;
    //r200Size = r200n*r200n;
    //cuSolver 
    //cuSolverStatus_t solverStatus;
    
-   //cudaStream_t stream = NULL;
-   cuSolverStatus_t status;
-   cublasFillMode_t uplo = CUBLAS_FILL_MODE_LOWER;
-   
+   //cudaStream_t stream = NULL;   
    
    //set stream
    //cusolverDnSetStream(csrHandle, stream);
@@ -83,17 +80,20 @@ srcFile.close();
 //cholesky decomp with floats (specified by S)
   //initialize variables
   cusolverDnHandle_t csrHandle = NULL;
-  cublasFillMode_t uplo = CUBLAS_FILL_MODE_LOWER;
+  cublasFillMode_t uplo= CUBLAS_FILL_MODE_LOWER;
+  cuSolverStatus_t status;
+  int r20workSize = 0;
   double* r20work;
   int* devInfo; //used for error checking
+
   //double* r200work;
   //create cusolver handle 
-  status = cusolerDnCreate(&csrHandle);
+  status = cusolverDnCreate(&csrHandle);
   assert(CUSOLVER_STATUS_SUCCESS == status);
 
   //This is the Cholesky decomp step 
   //First calculate size of workspace
-  int r20  int r20workSize = 0;
+  
   //float r200work;
   status = cusolverDnDpotrf_bufferSize(csrHandle, 
                                 uplo, r20n, r20Arr, r20n, r20workSize);
@@ -134,7 +134,7 @@ srcFile.close();
       }*/
 
    //test input read by printing results
-  printf('\n DECOMP RESULTS: \n');
+  printf("\n DECOMP RESULTS: \n");
    for(int i = 0; i < 20; i++ ){
     for(int j = 0; j <20; j++ )
       {
