@@ -24,21 +24,30 @@ int main( int argc, char const *argv[])
 {
  //initialize variables
    //initiliaze arrays for holding input data
-   float* r20Arr; 
-   float* r200Arr;
-   float* r20work;
-   float* r200work;
+   double* r20Arr; 
+   double* r200Arr;
+   double* r20work;
+   double* r200work;
 
    int r20Size, r200Size;
    ifstream srcFile;
    float a;
    r20n = 20;
-   r200n = 200;
+   //r200n = 200;
    r20Size = r20n*r20n;
-   r200Size = r200n*r200n;
+   //r200Size = r200n*r200n;
    //cuSolver 
    //cuSolverStatus_t solverStatus;
    cusolverDnHandle_t csrHandle = NULL;
+   cudaStream_t stream = NULL;
+   cuSolverStatus_t status;
+   cublasFillMode_t uplo = CUBLAS_FILL_MODE_LOWER;
+   
+   //create cusolver handle and bind a stream
+   status = cusolerDnCreate(&csrHandle);
+   assert(CUSOLVER_STATUS_SUCCESS == status);
+   //set stream
+   cusolverDnSetStream(csrHandle, stream);
 
    //print cusolver version
    int major=-1,minor=-1,patch=-1;
@@ -48,8 +57,8 @@ int main( int argc, char const *argv[])
     printf("CUSOLVER Version (Major,Minor,PatchLevel): %d.%d.%d\n", major,minor,patch);
 
    //allocated unified memory. 
-   cudaMallocManaged(&r20Arr, r20Size*sizeof(float));
-   cudaMallocManaged(&r200Arr, r200Size*sizeof(float));
+   cudaMallocManaged(&r20Arr, r20Size*sizeof(double));
+   //cudaMallocManaged(&r200Arr, r200Size*sizeof(float));
    //allocate memory for workspace
   
    //Section for reading in arrays from file
@@ -75,17 +84,17 @@ int main( int argc, char const *argv[])
   //This is the Cholesky decomp step 
   //First calculate size of workspace
   int r20BufferSize;
-  float r20workSize;
-  float r200work;
-  cusolverDnSpotrf_bufferSize(csrHandle, 
+  double r20workSize;
+  //float r200work;
+  cusolverDnDpotrf_bufferSize(csrHandle, 
                                 uplo, r20n, r20Arr, r20n, r20workSize);
 
-  cusolverDnSpotrf_bufferSize(csrHandle, 
-                                uplo, r200n, r200Arr, r200n, r200workSize);
+  //cusolverDnSpotrf_bufferSize(csrHandle, 
+  //                              uplo, r200n, r200Arr, r200n, r200workSize);
 
   //Allocate memory for workspace
   cudaMallocManaged(r20work, r20workSize*sizeof(float));
-  cudaMallocManaged(&r200work, r200workSize*sizeof(float));
+  //cudaMallocManaged(&r200work, r200workSize*sizeof(float));
   /* Function parameters: 
      cusolverDnHandle_t: handle to cuSolver library
      cublasFillMode_t: Indicates of matrix A lower or upper part stored
@@ -129,7 +138,7 @@ int main( int argc, char const *argv[])
    srcFile.close();
    //free memory
    cudaFree(r20);
-   cudaFree(r200);
+   //cudaFree(r200);
 
    
 }
