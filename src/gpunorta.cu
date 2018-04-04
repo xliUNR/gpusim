@@ -26,8 +26,7 @@ int main( int argc, char const *argv[])
    //initiliaze arrays for holding input data
    double* r20Arr; 
    double* r200Arr;
-   double* r20work;
-   double* r200work;
+   
 
    int r20Size, r200Size;
    ifstream srcFile;
@@ -38,16 +37,14 @@ int main( int argc, char const *argv[])
    //r200Size = r200n*r200n;
    //cuSolver 
    //cuSolverStatus_t solverStatus;
-   cusolverDnHandle_t csrHandle = NULL;
-   cudaStream_t stream = NULL;
+   
+   //cudaStream_t stream = NULL;
    cuSolverStatus_t status;
    cublasFillMode_t uplo = CUBLAS_FILL_MODE_LOWER;
    
-   //create cusolver handle and bind a stream
-   status = cusolerDnCreate(&csrHandle);
-   assert(CUSOLVER_STATUS_SUCCESS == status);
+   
    //set stream
-   cusolverDnSetStream(csrHandle, stream);
+   //cusolverDnSetStream(csrHandle, stream);
 
    //print cusolver version
    int major=-1,minor=-1,patch=-1;
@@ -56,11 +53,10 @@ int main( int argc, char const *argv[])
     cusolverGetProperty(PATCH_LEVEL, &patch);
     printf("CUSOLVER Version (Major,Minor,PatchLevel): %d.%d.%d\n", major,minor,patch);
 
-   //allocated unified memory. 
+   //allocated unified memory for storage of input covar matrix. 
    cudaMallocManaged(&r20Arr, r20Size*sizeof(double));
    //cudaMallocManaged(&r200Arr, r200Size*sizeof(float));
-   //allocate memory for workspace
-  
+     
    //Section for reading in arrays from file
    srcFile.open("../test_corr_matrix_d=20.txt", fstream::in);
    if(srcFile)
@@ -79,22 +75,36 @@ int main( int argc, char const *argv[])
         cout << std::endl << "ERROR OPENING FILE";
       }
 
-  //cholesky decomp with floats (specified by S)
-  
+//close file
+srcFile.close();
+
+//cholesky decomp with floats (specified by S)
+  //initialize variables
+  cusolverDnHandle_t csrHandle = NULL;
+  cublasFillMode_t uplo = CUBLAS_FILL_MODE_LOWER;
+  double* r20work;
+  int* devInfo; //used for error checking
+  //double* r200work;
+  //create cusolver handle 
+  status = cusolerDnCreate(&csrHandle);
+  assert(CUSOLVER_STATUS_SUCCESS == status);
+
   //This is the Cholesky decomp step 
   //First calculate size of workspace
-  int r20BufferSize;
-  double r20workSize;
+  int r20  int r20workSize = 0;
   //float r200work;
-  cusolverDnDpotrf_bufferSize(csrHandle, 
+  status = cusolverDnDpotrf_bufferSize(csrHandle, 
                                 uplo, r20n, r20Arr, r20n, r20workSize);
+  assert(CUSOLVER_STATUS_SUCCESS == status );
 
   //cusolverDnSpotrf_bufferSize(csrHandle, 
   //                              uplo, r200n, r200Arr, r200n, r200workSize);
-
+ 
   //Allocate memory for workspace
-  cudaMallocManaged(r20work, r20workSize*sizeof(float));
+  cudaMallocManaged(&r20work, r20workSize*sizeof(double));
   //cudaMallocManaged(&r200work, r200workSize*sizeof(float));
+  
+  //This step calls the cholesky function from cuSolver
   /* Function parameters: 
      cusolverDnHandle_t: handle to cuSolver library
      cublasFillMode_t: Indicates of matrix A lower or upper part stored
@@ -107,7 +117,10 @@ int main( int argc, char const *argv[])
 
 
   */ 
-  cudasolverDnSpotrf(csrHandle, );    
+  cudasolverDnSpotrf(csrHandle, uplo, r20n, r20Arr, r20n, 
+                                      r20work, r20workSize, devInfo); 
+
+  printf("Dev Info: %d", devInfo);
    //fclose(fp);
   /* fp = fopen("test_corr_matrix_d=200.txt", "r"); 
    if(fp)
@@ -116,9 +129,10 @@ int main( int argc, char const *argv[])
            {
              fscanf(fp, "%f", &r200[i]);
 	   }
-      }
+      }*/
 
    //test input read by printing results
+  printf('\n DECOMP RESULTS: \n');
    for(int i = 0; i < 20; i++ ){
     for(int j = 0; j <20; j++ )
       {
@@ -127,7 +141,7 @@ int main( int argc, char const *argv[])
       printf("\n");
    }   
 
-    for(int i = 0; i < 200; i++ ){
+    /*for(int i = 0; i < 200; i++ ){
       for(int j = 0; j <200; j++ )
         {
           printf("%f", r200[i*20+j]);
@@ -138,6 +152,7 @@ int main( int argc, char const *argv[])
    srcFile.close();
    //free memory
    cudaFree(r20);
+   cudaFree(r20work);
    //cudaFree(r200);
 
    
