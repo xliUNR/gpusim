@@ -11,6 +11,8 @@
 #include <cstdio>
 #include <iostream>
 #include <stdlib.h>
+#include <cusolverDn.h>
+
 using namespace std;
 
 
