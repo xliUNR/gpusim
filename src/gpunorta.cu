@@ -12,6 +12,7 @@
 #include <iostream>
 #include <stdlib.h>
 #include <cusolverDn.h>
+#include <assert.h>
 
 using namespace std;
 
@@ -82,7 +83,7 @@ srcFile.close();
   //initialize variables
   cusolverDnHandle_t csrHandle = NULL;
   cublasFillMode_t uplo= CUBLAS_FILL_MODE_LOWER;
-  cuSolverstatus_t status;
+  cusolverStatus_t status;
   int r20workSize = 0;
   double* r20work;
   int* devInfo; //used for error checking
