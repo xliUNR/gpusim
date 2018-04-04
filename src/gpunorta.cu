@@ -30,7 +30,8 @@ int main( int argc, char const *argv[])
    double* r200Arr;
    int r20n = 20;
 
-   int r20Size, r200Size;
+   int r20Size; 
+   //int r200Size;
    ifstream srcFile;
    float a;
    
@@ -81,7 +82,7 @@ srcFile.close();
   //initialize variables
   cusolverDnHandle_t csrHandle = NULL;
   cublasFillMode_t uplo= CUBLAS_FILL_MODE_LOWER;
-  cuSolverStatus_t status;
+  cuSolverstatus_t status;
   int r20workSize = 0;
   double* r20work;
   int* devInfo; //used for error checking
@@ -119,7 +120,7 @@ srcFile.close();
 
 
   */ 
-  cudasolverDnSpotrf(csrHandle, uplo, r20n, r20Arr, r20n, 
+  cusolverDnDpotrf(csrHandle, uplo, r20n, r20Arr, r20n, 
                                       r20work, r20workSize, devInfo); 
 
   printf("Dev Info: %d", devInfo);
@@ -138,7 +139,7 @@ srcFile.close();
    for(int i = 0; i < 20; i++ ){
     for(int j = 0; j <20; j++ )
       {
-        printf("%f", r20[i*20+j]);
+        printf("%f", r20Arr[i*20+j]);
       } 
       printf("\n");
    }   
@@ -153,7 +154,7 @@ srcFile.close();
      */ 
    srcFile.close();
    //free memory
-   cudaFree(r20);
+   cudaFree(r20Arr);
    cudaFree(r20work);
    //cudaFree(r200);
 
