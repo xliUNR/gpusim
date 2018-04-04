@@ -66,8 +66,10 @@ int main( int argc, char const *argv[])
 	 for(int i = 0; i < r20Size; i++)
           {
             srcFile >> a;
-	          cout << a << "|";
+	          //cout << a << "|";
             if( !(i % 20) ){ cout << endl;}
+
+            r20Arr[i] = a;
           } 
           
       }
@@ -78,7 +80,16 @@ int main( int argc, char const *argv[])
 
 //close file
 srcFile.close();
-
+ 
+ //test input read by printing results
+  printf("\n INITIAL MATRIX\n");
+   for(int i = 0; i < 20; i++ ){
+    for(int j = 0; j <20; j++ )
+      {
+        printf("%f", r20Arr[i*20+j]);
+      } 
+      printf("\n");
+   }   
 //cholesky decomp with floats (specified by S)
   //initialize variables
   cusolverDnHandle_t csrHandle = NULL;
