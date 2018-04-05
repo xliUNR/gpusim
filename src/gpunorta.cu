@@ -89,14 +89,14 @@ srcFile.close();
    for(int i = 0; i < 3; i++ ){
     for(int j = 0; j <3; j++ )
       {
-        printf("%f", dA0[i*3+j]);
+        printf(" %f", dA0[i*3+j]);
       } 
       printf("\n");
    }  
 //cholesky decomp with floats (specified by S)
   //initialize variables
   cusolverDnHandle_t csrHandle = NULL;
-  cublasFillMode_t uplo= CUBLAS_FILL_MODE_LOWER;
+  cublasFillMode_t uplo= CUBLAS_FILL_MODE_UPPER;
   cusolverStatus_t status;
   int r20workSize = 0;
   double* r20work;
@@ -157,7 +157,7 @@ srcFile.close();
    for(int i = 0; i < 3; i++ ){
     for(int j = 0; j <3; j++ )
       {
-        printf("%f", dA0[i*3+j]);
+        printf(" %f", dA0[i*3+j]);
       } 
       printf("\n");
    }   
