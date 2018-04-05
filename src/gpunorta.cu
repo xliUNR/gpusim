@@ -57,7 +57,7 @@ int main( int argc, char const *argv[])
 
    //allocated unified memory for storage of input covar matrix. 
    cudaMallocManaged(&r20Arr, r20Size*sizeof(double));
-   cudaMallocManaged(*dA0, 3*3*sizeof(double));
+   cudaMallocManaged(&dA0, 3*3*sizeof(double));
    cudaMemcpy(dA0, A0, 3*3*sizeof(double), cudaMemcpyHostToDevice);
    //cudaMallocManaged(&r200Arr, r200Size*sizeof(float));
      
