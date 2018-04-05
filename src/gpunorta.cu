@@ -35,7 +35,8 @@ int main( int argc, char const *argv[])
    //int r200Size;
    ifstream srcFile;
    float a;
-   
+   double A0[3*3] = { 1.0, 2.0, 3.0, 2.0, 5.0, 5.0, 3.0, 5.0, 12.0 };
+   double* dA0;
    //r200n = 200;
    r20Size = r20n*r20n;
    //r200Size = r200n*r200n;
@@ -56,6 +57,8 @@ int main( int argc, char const *argv[])
 
    //allocated unified memory for storage of input covar matrix. 
    cudaMallocManaged(&r20Arr, r20Size*sizeof(double));
+   cudaMallocManaged(*dA0, 3*3*sizeof(double));
+   cudaMemcpy(dA0, A0, 3*3*sizeof(double), cudaMemcpyHostToDevice);
    //cudaMallocManaged(&r200Arr, r200Size*sizeof(float));
      
    //Section for reading in arrays from file
@@ -83,13 +86,13 @@ srcFile.close();
  
  //test input read by printing results
   printf("\n INITIAL MATRIX\n");
-   for(int i = 0; i < 20; i++ ){
-    for(int j = 0; j <20; j++ )
+   for(int i = 0; i < 3; i++ ){
+    for(int j = 0; j <3; j++ )
       {
-        printf("%f", r20Arr[i*20+j]);
+        printf("%f", dA0[i*3+j]);
       } 
       printf("\n");
-   }   
+   }  
 //cholesky decomp with floats (specified by S)
   //initialize variables
   cusolverDnHandle_t csrHandle = NULL;
@@ -109,8 +112,9 @@ srcFile.close();
   //First calculate size of workspace
   
   //float r200work;
-  status = cusolverDnDpotrf_bufferSize(csrHandle, 
-                                uplo, r20n, r20Arr, r20n, &r20workSize);
+  /*status = cusolverDnDpotrf_bufferSize(csrHandle, 
+                                uplo, r20n, r20Arr, r20n, &r20workSize);*/
+  status = cusolverDnDpotrf_bufferSize(csrHandle, uplo, 3, dA0, 3, &r20workSize);
   assert(CUSOLVER_STATUS_SUCCESS == status );
 
   //cusolverDnSpotrf_bufferSize(csrHandle, 
@@ -133,8 +137,9 @@ srcFile.close();
 
 
   */ 
-  cusolverDnDpotrf(csrHandle, uplo, r20n, r20Arr, r20n, 
-                                      r20work, r20workSize, devInfo); 
+  cusolverDnDpotrf(csrHandle, uplo, 3, dA0, 3, r20work, r20workSize, devInfo);
+  /*cusolverDnDpotrf(csrHandle, uplo, r20n, r20Arr, r20n, 
+                                      r20work, r20workSize, devInfo); */
 
   printf("Dev Info: %d", *devInfo);
    //fclose(fp);
@@ -149,10 +154,10 @@ srcFile.close();
 
    //test input read by printing results
   printf("\n DECOMP RESULTS: \n");
-   for(int i = 0; i < 20; i++ ){
-    for(int j = 0; j <20; j++ )
+   for(int i = 0; i < 3; i++ ){
+    for(int j = 0; j <3; j++ )
       {
-        printf("%f", r20Arr[i*20+j]);
+        printf("%f", dA0[i*3+j]);
       } 
       printf("\n");
    }   
