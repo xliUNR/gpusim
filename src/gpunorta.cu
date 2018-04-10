@@ -13,7 +13,8 @@
 #include <stdlib.h>
 #include <cusolverDn.h>
 #include <assert.h>
-
+#include <cuda.h>
+#include <curand.h>
 using namespace std;
 
 
@@ -37,6 +38,8 @@ int main( int argc, char const *argv[])
    float a;
    double A0[3*3] = { 1.0, 2.0, 3.0, 2.0, 5.0, 5.0, 3.0, 5.0, 12.0 };
    double* dA0;
+   double* sim_data;
+
    //r200n = 200;
    r20Size = r20n*r20n;
    //r200Size = r200n*r200n;
@@ -121,7 +124,7 @@ srcFile.close();
   //                              uplo, r200n, r200Arr, r200n, r200workSize);
  
   //Allocate memory for workspace
-  cudaMallocManaged(&r20work, r20workSize*sizeof(double));
+  cudaMallocManaged( &r20work, r20workSize*sizeof(double) );
   //cudaMallocManaged(&r200work, r200workSize*sizeof(float));
   
   //This step calls the cholesky function from cuSolver
@@ -170,7 +173,8 @@ srcFile.close();
         printf("\n");
    }  
      */ 
-   srcFile.close();
+///////// generate random variable //////////////////////////////
+curandGenerateNormalDouble()
    //free memory
    cudaFree(r20Arr);
    cudaFree(r20work);
