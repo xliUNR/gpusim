@@ -4,7 +4,7 @@
 //////////////////////////////////////////////////////////////////////////////
 #include "cudaFuncs.h"
 #include <cusolverDn.h>
-#include 
+#include <curand.h>
 
 void chol(int* inMat, int dim, cublasFillMode_t uplo ){
    //variables for cuSolver cholesky 
@@ -66,5 +66,31 @@ void chol(int* inMat, int dim, cublasFillMode_t uplo ){
    }
 }
 
-//This function generates normal distributed
-void normGen()
+//This function generates pseudo random standard normal distribution
+void normGen( float* outputPtr, int n ){
+   //declare variables
+   curandGenerator_t randHandle;
+   curandStatus_t status;
+   //First must create generator and set options
+   status = curandCreateGenerator( &randHandle, CURAND_RNG_PSEUDO_XORWOW );
+   assert( status == CURAND_STATUS_SUCCESS );
+   //This step calls the random number generator function from cuRand
+   /* Function paramters:
+      curandGenerator_t : handle to generator
+      float * outputPtr : pointer to array storing numbers
+      size_t num        : 
+      float mean        : Given mean
+      float stddev      : Given standard deviation
+   */
+   status = curandGenerateNormalDouble( &randHandle, outputPtr, n, 0, 0 );
+   assert( status == CURAND_STATUS_SUCCESS );
+
+   //print results for testing purposes
+   printf("\n Psuedo random standard normal matrix: \n");
+   for(int i = 0; i < n; i++ ){
+      for(int j = 0; j < n, j++ ){
+         printf(" %f", outputPtr[ i*n + j ]);
+      }
+      printf("\n");
+   }
+}

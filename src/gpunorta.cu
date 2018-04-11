@@ -37,7 +37,7 @@ int main( int argc, char const *argv[])
    ifstream srcFile;
    float a;
    double A0[3*3] = { 1.0, 2.0, 3.0, 2.0, 5.0, 5.0, 3.0, 5.0, 12.0 };
-   double* dA0;
+   
    double* sim_data;
 
    //r200n = 200;
@@ -60,8 +60,7 @@ int main( int argc, char const *argv[])
 
    //allocated unified memory for storage of input covar matrix. 
    cudaMallocManaged(&r20Arr, r20Size*sizeof(double));
-   cudaMallocManaged(&dA0, 3*3*sizeof(double));
-   cudaMemcpy(dA0, A0, 3*3*sizeof(double), cudaMemcpyHostToDevice);
+   
    //cudaMallocManaged(&r200Arr, r200Size*sizeof(float));
      
    //Section for reading in arrays from file
