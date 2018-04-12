@@ -177,7 +177,11 @@ chol( dA0, 3, CUBLAS_FILL_MODE_UPPER );
       printf("\n");
    }
 //generate random variables matrix
-normGen(dA0, 3);
+size_t n = 10;
+double * randMat;
+cudaMallocManaged( &randMat, 10*sizeof(double) );
+normGen( randMat, n, 0, 0 );
+
 //print results to screen
 printf("\n RANDOM MATRIX: \n");
 for(int i = 0; i < 3; i++ ){
@@ -202,5 +206,5 @@ for(int i = 0; i < 3; i++ ){
    //cudaFree(r20work);
    //cudaFree(r200);
    cudaFree(dA0);
-   
+   cudaFree(randMat);   
 }

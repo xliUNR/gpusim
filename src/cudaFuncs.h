@@ -9,7 +9,7 @@
 #include <curand.h>
 void chol(double* , int , cublasFillMode_t );
 
-void normGen( double*, int );
+void normGen( double*, size_t, int, int);
 
 
 #endif
