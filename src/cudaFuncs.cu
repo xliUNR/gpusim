@@ -68,7 +68,7 @@ void chol(double* inMat, int dim, cublasFillMode_t uplo ){
 
 
 //This function generates pseudo random standard normal distribution
-void normGen( double* outputPtr, size_t n, int mean, int stddev ){
+void normGen( double* outputPtr, size_t n, double mean, double stddev ){
    //declare variables
    curandGenerator_t randHandle;
    curandStatus_t status;
@@ -80,23 +80,23 @@ void normGen( double* outputPtr, size_t n, int mean, int stddev ){
       curandGenerator_t : handle to generator
       float * outputPtr : pointer to array storing numbers
       size_t num        : 
-      float mean        : Given mean
-      float stddev      : Given standard deviation
+      double mean       : Given mean
+      double stddev     : Given standard deviation
    */
-   //status = curandSetPseudoRandomGeneratorSeed( randHandle, 1234ULL );
-   //assert( status == CURAND_STATUS_SUCCESS && "seeder");
+   status = curandSetPseudoRandomGeneratorSeed( randHandle, 1234ULL );
+   assert( status == CURAND_STATUS_SUCCESS && "seeder");
 
    status = curandGenerateNormalDouble( randHandle, outputPtr, n, mean, stddev );
    assert( status == CURAND_STATUS_SUCCESS && "curand function call");
 
    //print results for testing purposes
-   printf("\n Psuedo random standard normal matrix: \n");
+   /*printf("\n Psuedo random standard normal matrix: \n");
    for(int i = 0; i < 3; i++ ){
       for(int j = 0; j < 3; j++ ){
          printf(" %f", outputPtr[ i*n + j ]);
       }
       printf("\n");
-   }
+   }*/
    status = curandDestroyGenerator( randHandle );
    assert( status == CURAND_STATUS_SUCCESS && "destroyer" );
 

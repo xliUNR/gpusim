@@ -180,13 +180,13 @@ chol( dA0, 3, CUBLAS_FILL_MODE_UPPER );
 size_t n = 10;
 double * randMat;
 cudaMallocManaged( &randMat, 10*sizeof(double) );
-normGen( randMat, n, 0, 0 );
+normGen( randMat, n, 0.0,1.0 );
 
 //print results to screen
 printf("\n RANDOM MATRIX: \n");
 for(int i = 0; i < 3; i++ ){
   for(int j=0; j < 3; j++){
-    printf(" %f", dA0[i*3+j]);
+    printf(" %f", randMat[i*3+j]);
     }
   printf("\n");
  }  
