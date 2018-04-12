@@ -96,7 +96,7 @@ srcFile.close();
       printf("\n");
    }  
 //cholesky decomp with floats (specified by S)
-  //initialize variables
+/*  //initialize variables
   cusolverDnHandle_t csrHandle = NULL;
   cublasFillMode_t uplo= CUBLAS_FILL_MODE_UPPER;
   cusolverStatus_t status;
@@ -112,10 +112,10 @@ srcFile.close();
 
   //This is the Cholesky decomp step 
   //First calculate size of workspace
-  
+  */
   //float r200work;
   /*status = cusolverDnDpotrf_bufferSize(csrHandle, 
-                                uplo, r20n, r20Arr, r20n, &r20workSize);*/
+                                uplo, r20n, r20Arr, r20n, &r20workSize);
   status = cusolverDnDpotrf_bufferSize(csrHandle, uplo, 3, dA0, 3, &r20workSize);
   assert(CUSOLVER_STATUS_SUCCESS == status );
 
@@ -127,7 +127,7 @@ srcFile.close();
   //cudaMallocManaged(&r200work, r200workSize*sizeof(float));
   
   //This step calls the cholesky function from cuSolver
-  /* Function parameters: 
+     Function parameters: 
      cusolverDnHandle_t: handle to cuSolver library
      cublasFillMode_t: Indicates of matrix A lower or upper part stored
      int: dimension of matrix A
@@ -138,12 +138,17 @@ srcFile.close();
      int*: return for error checking
 
 
-  */ 
+  
   cusolverDnDpotrf(csrHandle, uplo, 3, dA0, 3, r20work, r20workSize, devInfo);
-  /*cusolverDnDpotrf(csrHandle, uplo, r20n, r20Arr, r20n, 
-                                      r20work, r20workSize, devInfo); */
+  cusolverDnDpotrf(csrHandle, uplo, r20n, r20Arr, r20n, 
+                                      r20work, r20workSize, devInfo); 
+  */
+ 
+  //printf("Dev Info: %d", *devInfo);
 
-  printf("Dev Info: %d", *devInfo);
+//call function to perform cholesky
+chol( A0, 3, CUBLAS_FILL_MODE_UPPER );   
+
    //fclose(fp);
   /* fp = fopen("test_corr_matrix_d=200.txt", "r"); 
    if(fp)
@@ -173,7 +178,7 @@ srcFile.close();
    }  
      */ 
 ///////// generate random variable //////////////////////////////
-curandGenerateNormalDouble()
+//curandGenerateNormalDouble()
    //free memory
    cudaFree(r20Arr);
    cudaFree(r20work);
