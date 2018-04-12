@@ -14,7 +14,9 @@
 #include <cusolverDn.h>
 #include <assert.h>
 #include <cuda.h>
-#include <curand.h>
+//#include <curand.h>
+#include "cudaFuncs.h"
+
 using namespace std;
 
 
@@ -37,7 +39,7 @@ int main( int argc, char const *argv[])
    ifstream srcFile;
    float a;
    double A0[3*3] = { 1.0, 2.0, 3.0, 2.0, 5.0, 5.0, 3.0, 5.0, 12.0 };
-   
+   double* dA0;
    double* sim_data;
 
    //r200n = 200;
@@ -59,8 +61,13 @@ int main( int argc, char const *argv[])
     printf("CUSOLVER Version (Major,Minor,PatchLevel): %d.%d.%d\n", major,minor,patch);
 
    //allocated unified memory for storage of input covar matrix. 
-   cudaMallocManaged(&r20Arr, r20Size*sizeof(double));
+   //cudaMallocManaged(&r20Arr, r20Size*sizeof(double));
    
+   //allocate device memory for simple testing
+   cudaMallocManaged( &dA0, 9*sizeof(double) );
+   
+   //copy explicitly defined matrix into device
+   cudaMemcpy( dA0, A0, 9*sizeof(double), cudaMemcpyHostToDevice );
    //cudaMallocManaged(&r200Arr, r200Size*sizeof(float));
      
    //Section for reading in arrays from file
@@ -180,9 +187,9 @@ chol( A0, 3, CUBLAS_FILL_MODE_UPPER );
 ///////// generate random variable //////////////////////////////
 //curandGenerateNormalDouble()
    //free memory
-   cudaFree(r20Arr);
-   cudaFree(r20work);
+   //cudaFree(r20Arr);
+   //cudaFree(r20work);
    //cudaFree(r200);
-
+   cudaFree(dA0);
    
 }
