@@ -7,32 +7,31 @@
 #include <cusolverDn.h>
 #include <curand.h>
 
-void chol(int* inMat, int dim, cublasFillMode_t uplo ){
+void chol(double* inMat, int dim, cublasFillMode_t uplo ){
    //variables for cuSolver cholesky 
    cusolverDnHandle_t csrHandle = NULL;
-   cublasFillMode_t uplo = CUBLAS_FILL_MODE_UPPER;
    cusolverStatus_t status;
    
    //variables for workspace
    int workSize = 0;
    double* workPtr;
 
-   int* devInfo //used for error checking
+   int* devInfo; //used for error checking
 
    //allocate shared memory
    cudaMallocManaged( &devInfo, sizeof(int) );
    //create handle for library
    status = cusolverDnCreate( &csrHandle );
    //get buffer size
-   status = cussolverDnDpotrf_bufferSize(csrHandle, uplo, dim, 
+   status = cusolverDnDpotrf_bufferSize(csrHandle, uplo, dim, 
                                                    inMat, dim, &workSize );
    assert( status == CUSOLVER_STATUS_SUCCESS );
    //allocate memory for workspace
    cudaMallocManaged( &workPtr, workSize * sizeof(double) );
    //print starting matrix for error checking
-   printf("\n Matrix before decomp: ");
+   printf("\n Matrix before decomp: \n");
    for(int i = 0; i < dim; i++ ){
-      for(int j = 0; j < dim, j++ ){
+      for(int j = 0; j < dim; j++ ){
          printf(" %f", inMat[ i*dim + j ]);
       }
       printf("\n");
@@ -58,9 +57,9 @@ void chol(int* inMat, int dim, cublasFillMode_t uplo ){
   printf("\n Dev Info for cholesky: %d", *devInfo);
   
   //print final results for checking
-  printf("\n Matrix after decomp: ");
+  printf("\n Matrix after decomp: \n");
    for(int i = 0; i < dim; i++ ){
-      for(int j = 0; j < dim, j++ ){
+      for(int j = 0; j < dim; j++ ){
          printf(" %f", inMat[ i*dim + j ]);
       }
       printf("\n");
@@ -68,7 +67,7 @@ void chol(int* inMat, int dim, cublasFillMode_t uplo ){
 }
 
 //This function generates pseudo random standard normal distribution
-void normGen( float* outputPtr, int n ){
+void normGen( double* outputPtr, int n ){
    //declare variables
    curandGenerator_t randHandle;
    curandStatus_t status;
@@ -83,13 +82,13 @@ void normGen( float* outputPtr, int n ){
       float mean        : Given mean
       float stddev      : Given standard deviation
    */
-   status = curandGenerateNormalDouble( &randHandle, outputPtr, n, 0, 0 );
+   status = curandGenerateNormalDouble( randHandle, outputPtr, n, 0, 0 );
    assert( status == CURAND_STATUS_SUCCESS );
 
    //print results for testing purposes
    printf("\n Psuedo random standard normal matrix: \n");
    for(int i = 0; i < n; i++ ){
-      for(int j = 0; j < n, j++ ){
+      for(int j = 0; j < n; j++ ){
          printf(" %f", outputPtr[ i*n + j ]);
       }
       printf("\n");

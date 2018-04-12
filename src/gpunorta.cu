@@ -61,7 +61,7 @@ int main( int argc, char const *argv[])
     printf("CUSOLVER Version (Major,Minor,PatchLevel): %d.%d.%d\n", major,minor,patch);
 
    //allocated unified memory for storage of input covar matrix. 
-   //cudaMallocManaged(&r20Arr, r20Size*sizeof(double));
+   cudaMallocManaged(&r20Arr, r20Size*sizeof(double));
    
    //allocate device memory for simple testing
    cudaMallocManaged( &dA0, 9*sizeof(double) );
@@ -95,13 +95,14 @@ srcFile.close();
  
  //test input read by printing results
   printf("\n INITIAL MATRIX\n");
-   for(int i = 0; i < 3; i++ ){
+ 
+  for(int i = 0; i < 3; i++ ){
     for(int j = 0; j <3; j++ )
       {
         printf(" %f", dA0[i*3+j]);
       } 
       printf("\n");
-   }  
+   } 
 //cholesky decomp with floats (specified by S)
 /*  //initialize variables
   cusolverDnHandle_t csrHandle = NULL;
@@ -154,7 +155,7 @@ srcFile.close();
   //printf("Dev Info: %d", *devInfo);
 
 //call function to perform cholesky
-chol( A0, 3, CUBLAS_FILL_MODE_UPPER );   
+chol( dA0, 3, CUBLAS_FILL_MODE_UPPER );   
 
    //fclose(fp);
   /* fp = fopen("test_corr_matrix_d=200.txt", "r"); 
@@ -168,13 +169,23 @@ chol( A0, 3, CUBLAS_FILL_MODE_UPPER );
 
    //test input read by printing results
   printf("\n DECOMP RESULTS: \n");
-   for(int i = 0; i < 3; i++ ){
+  for(int i = 0; i < 3; i++ ){
     for(int j = 0; j <3; j++ )
       {
         printf(" %f", dA0[i*3+j]);
       } 
       printf("\n");
-   }   
+   }
+//generate random variables matrix
+normGen(dA0, 3);
+//print results to screen
+printf("\n RANDOM MATRIX: \n");
+for(int i = 0; i < 3; i++ ){
+  for(int j=0; j < 3; j++){
+    printf(" %f", dA0[i*3+j]);
+    }
+  printf("\n");
+ }  
 
     /*for(int i = 0; i < 200; i++ ){
       for(int j = 0; j <200; j++ )
@@ -187,7 +198,7 @@ chol( A0, 3, CUBLAS_FILL_MODE_UPPER );
 ///////// generate random variable //////////////////////////////
 //curandGenerateNormalDouble()
    //free memory
-   //cudaFree(r20Arr);
+   cudaFree(r20Arr);
    //cudaFree(r20work);
    //cudaFree(r200);
    cudaFree(dA0);
