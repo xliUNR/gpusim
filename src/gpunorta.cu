@@ -70,6 +70,11 @@ int main( int argc, char const *argv[])
    cudaMemcpy( dA0, A0, 9*sizeof(double), cudaMemcpyHostToDevice );
    //cudaMallocManaged(&r200Arr, r200Size*sizeof(float));
      
+   //Timing for file read
+   cudaEvent_t read readStart, readEnd;
+   cudaEventCreate( &readStart, &readEnd );
+   cudaEventRecord( readStart, 0); 
+
    //Section for reading in arrays from file
    srcFile.open("../test_corr_matrix_d=20.txt", fstream::in);
    if(srcFile)
@@ -90,9 +95,14 @@ int main( int argc, char const *argv[])
         cout << std::endl << "ERROR OPENING FILE";
       }
 
-//close file
-srcFile.close();
- 
+ //close file
+ srcFile.close();
+
+ //stop timing
+ cudaEventRecord( readEnd, 0 );
+ cudaEventSynchronize( readEnd );
+ float readTime;
+ cudaEventElapsedTime( &readTime
  //test input read by printing results
   printf("\n INITIAL MATRIX\n");
  
