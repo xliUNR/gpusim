@@ -21,7 +21,8 @@ using namespace std;
 
 
 
-
+////////////////////////  Function Prototypes  ////////////////////////////////
+bool parseFromFile(const char* fileName, double* storage );
 
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -231,4 +232,19 @@ for(int i = 0; i < 3; i++ ){
    //cudaFree(r200);
    cudaFree(dA0);
    cudaFree(randMat);   
+}
+////////////////   Function Declarations  /////////////////////////////////////
+bool parseFromFile(const char* fileName, double* storage ){
+  ifstream srcFile;
+  srcFile.open( fileName, fstream::in );
+  //check for success
+  if( srcFile ){
+    cout << endl << "SUCCESSFUL FILE OPEN";
+
+    return true;
+  }
+  else{
+    return false;
+  }
+
 }
