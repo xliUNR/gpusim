@@ -71,8 +71,9 @@ int main( int argc, char const *argv[])
    //cudaMallocManaged(&r200Arr, r200Size*sizeof(float));
      
    //Timing for file read
-   cudaEvent_t read readStart, readEnd;
-   cudaEventCreate( &readStart, &readEnd );
+   cudaEvent_t readStart, readEnd;
+   cudaEventCreate( &readStart );
+   cudaEventCreate(  &readEnd );
    cudaEventRecord( readStart, 0); 
 
    //Section for reading in arrays from file
@@ -102,7 +103,7 @@ int main( int argc, char const *argv[])
  cudaEventRecord( readEnd, 0 );
  cudaEventSynchronize( readEnd );
  float readTime;
- cudaEventElapsedTime( &readTime
+ cudaEventElapsedTime( &readTime, readStart, readEnd );
  //test input read by printing results
   printf("\n INITIAL MATRIX\n");
  
@@ -163,9 +164,22 @@ int main( int argc, char const *argv[])
   */
  
   //printf("Dev Info: %d", *devInfo);
+//Timing for cholesky
+cudaEvent_t cholStart, cholEnd;
+cudaEventCreate( &cholStart ); 
+cudaEventCreate( &cholEnd );
+cudaEventRecord( cholStart, 0 );
 
 //call function to perform cholesky
 chol( dA0, 3, CUBLAS_FILL_MODE_UPPER );   
+//synchronize threads
+cudaDeviceSynchronize();
+
+//End timing
+cudaEventRecord( cholEnd, 0);
+cudaEventSynchronize( cholEnd );
+float cholTime;
+cudaEventElapsedTime( &cholTime, cholStart, cholEnd );
 
    //fclose(fp);
   /* fp = fopen("test_corr_matrix_d=200.txt", "r"); 
