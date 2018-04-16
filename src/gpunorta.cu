@@ -20,9 +20,15 @@
 using namespace std;
 
 
+<<<<<<< HEAD
 //////////////////////////// Function prototypes  /////////////////////////////
 bool readFromFile(char const*, double*, int );
 
+=======
+
+////////////////////////  Function Prototypes  ////////////////////////////////
+bool parseFromFile(const char* fileName, double* storage );
+>>>>>>> ad3a41d9239536586ea0e302b0e87e363257e1dc
 
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -243,6 +249,7 @@ for(int i = 0; i < 3; i++ ){
    cudaFree(dA0);
    cudaFree(randMat);   
 }
+<<<<<<< HEAD
 
 
 /////////////////// Function Implementation ///////////////////////////////////
@@ -265,3 +272,20 @@ bool readFromFile( const char* fileName, double* output, int n ){
      }
 
 }
+=======
+////////////////   Function Declarations  /////////////////////////////////////
+bool parseFromFile(const char* fileName, double* storage ){
+  ifstream srcFile;
+  srcFile.open( fileName, fstream::in );
+  //check for success
+  if( srcFile ){
+    cout << endl << "SUCCESSFUL FILE OPEN";
+
+    return true;
+  }
+  else{
+    return false;
+  }
+
+}
+>>>>>>> ad3a41d9239536586ea0e302b0e87e363257e1dc
