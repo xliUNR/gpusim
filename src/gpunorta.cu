@@ -20,7 +20,8 @@
 using namespace std;
 
 
-
+//////////////////////////// Function prototypes  /////////////////////////////
+bool readFromFile(char const*, double*, int );
 
 
 
@@ -41,6 +42,9 @@ int main( int argc, char const *argv[])
    double A0[3*3] = { 1.0, 2.0, 3.0, 2.0, 5.0, 5.0, 3.0, 5.0, 12.0 };
    double* dA0;
    double* sim_data;
+   //file names
+   char* r20file = "../test_corr_matrix_d=20.txt";
+   char* r200file = "../test_corr_matrix_d=200.txt";
 
    //r200n = 200;
    r20Size = r20n*r20n;
@@ -77,7 +81,7 @@ int main( int argc, char const *argv[])
    cudaEventRecord( readStart, 0); 
 
    //Section for reading in arrays from file
-   srcFile.open("../test_corr_matrix_d=20.txt", fstream::in);
+   /*srcFile.open("../test_corr_matrix_d=20.txt", fstream::in);
    if(srcFile)
       {
         cout << endl << "SUCCESSFUL FILE OPEN";
@@ -98,7 +102,14 @@ int main( int argc, char const *argv[])
 
  //close file
  srcFile.close();
-
+*/
+ if( readFromFile( r20file, r20Arr, 20) ){
+   cout << endl << "FILE OPEN SUCCESS!"
+ }  
+ else{
+   cout << endl << "ERROR FILE OPENING";
+ }
+ 
  //stop timing
  cudaEventRecord( readEnd, 0 );
  cudaEventSynchronize( readEnd );
@@ -231,4 +242,26 @@ for(int i = 0; i < 3; i++ ){
    //cudaFree(r200);
    cudaFree(dA0);
    cudaFree(randMat);   
+}
+
+
+/////////////////// Function Implementation ///////////////////////////////////
+bool readFromFile( const char* fileName, double* output, int n ){
+   ifstream source;
+   source.open( fileName, fstream::in );
+
+   if( source ){
+       for( int i = 0; i < size < n; i++ )
+         {
+            source >> output[i];
+         }
+       source.close();  
+       return true;
+     }
+
+   else{
+     source.close();   
+     return false;
+     }
+
 }
