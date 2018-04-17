@@ -44,13 +44,13 @@ int main( int argc, char const *argv[])
    int r20Size; 
    //int r200Size;
    ifstream srcFile;
-   float a;
    double A0[3*3] = { 1.0, 2.0, 3.0, 2.0, 5.0, 5.0, 3.0, 5.0, 12.0 };
    double* dA0;
    double* sim_data;
    //file names
-   char* r20file = "../test_corr_matrix_d=20.txt";
-   char* r200file = "../test_corr_matrix_d=200.txt";
+   char r20file[60] =  "../test_corr_matrix_d=20.txt";
+   char r200file[60] = "../test_corr_matrix_d=20.txt";
+
 
    //r200n = 200;
    r20Size = r20n*r20n;
@@ -110,7 +110,7 @@ int main( int argc, char const *argv[])
  srcFile.close();
 */
  if( readFromFile( r20file, r20Arr, 20) ){
-   cout << endl << "FILE OPEN SUCCESS!"
+   cout << endl << "FILE OPEN SUCCESS!";
  }  
  else{
    cout << endl << "ERROR FILE OPENING";
@@ -252,12 +252,12 @@ for(int i = 0; i < 3; i++ ){
 
 
 /////////////////// Function Implementation ///////////////////////////////////
-bool readFromFile( const char* fileName, double* output, int n ){
+bool readFromFile( const char* fileName, double* output, int size ){
    ifstream source;
    source.open( fileName, fstream::in );
 
    if( source ){
-       for( int i = 0; i < size < n; i++ )
+       for( int i = 0; i < size; i++ )
          {
             source >> output[i];
          }

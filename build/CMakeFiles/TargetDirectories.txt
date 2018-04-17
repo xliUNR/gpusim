@@ -1,0 +1,3 @@
+/cse/home/xli/gitrepos/gpusim/build/CMakeFiles/edit_cache.dir
+/cse/home/xli/gitrepos/gpusim/build/CMakeFiles/rebuild_cache.dir
+/cse/home/xli/gitrepos/gpusim/build/CMakeFiles/gpusim.dir
