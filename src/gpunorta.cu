@@ -20,15 +20,15 @@
 using namespace std;
 
 
-<<<<<<< HEAD
+
 //////////////////////////// Function prototypes  /////////////////////////////
 bool readFromFile(char const*, double*, int );
 
-=======
+
 
 ////////////////////////  Function Prototypes  ////////////////////////////////
 bool parseFromFile(const char* fileName, double* storage );
->>>>>>> ad3a41d9239536586ea0e302b0e87e363257e1dc
+
 
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -124,10 +124,10 @@ int main( int argc, char const *argv[])
  //test input read by printing results
   printf("\n INITIAL MATRIX\n");
  
-  for(int i = 0; i < 3; i++ ){
-    for(int j = 0; j <3; j++ )
+  for(int i = 0; i < 20; i++ ){
+    for(int j = 0; j <20; j++ )
       {
-        printf(" %f", dA0[i*3+j]);
+        printf(" %f", r20Arr[i*3+j]);
       } 
       printf("\n");
    } 
@@ -249,7 +249,6 @@ for(int i = 0; i < 3; i++ ){
    cudaFree(dA0);
    cudaFree(randMat);   
 }
-<<<<<<< HEAD
 
 
 /////////////////// Function Implementation ///////////////////////////////////
@@ -272,20 +271,4 @@ bool readFromFile( const char* fileName, double* output, int n ){
      }
 
 }
-=======
-////////////////   Function Declarations  /////////////////////////////////////
-bool parseFromFile(const char* fileName, double* storage ){
-  ifstream srcFile;
-  srcFile.open( fileName, fstream::in );
-  //check for success
-  if( srcFile ){
-    cout << endl << "SUCCESSFUL FILE OPEN";
 
-    return true;
-  }
-  else{
-    return false;
-  }
-
-}
->>>>>>> ad3a41d9239536586ea0e302b0e87e363257e1dc
