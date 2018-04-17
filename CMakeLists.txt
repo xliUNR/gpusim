@@ -11,11 +11,10 @@ set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -lpthread -Wall -O3 -D_MWAITXINTRIN_H_IN
 
 # find the dependencies
 find_package(CUDA REQUIRED)
-find_cuda_helper_libs(cusolver)
-
 # set the includes and the src
 
 file(GLOB_RECURSE SOURCES "src/*.h" "src/*.cpp" "src/*.cu")
+
 
 # finally the exec
 cuda_add_executable(
@@ -23,3 +22,4 @@ cuda_add_executable(
         ${SOURCES}
         )
 
+target_link_libraries(cusolver curand)
