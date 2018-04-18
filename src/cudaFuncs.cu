@@ -11,7 +11,7 @@ void chol(double* inMat, int dim, cublasFillMode_t uplo ){
    //variables for cuSolver cholesky 
    cusolverDnHandle_t csrHandle = NULL;
    cusolverStatus_t status;
-   
+   bool TESTFLAG = false;
    //variables for workspace
    int workSize = 0;
    double* workPtr;
@@ -28,15 +28,17 @@ void chol(double* inMat, int dim, cublasFillMode_t uplo ){
    assert( status == CUSOLVER_STATUS_SUCCESS );
    //allocate memory for workspace
    cudaMallocManaged( &workPtr, workSize * sizeof(double) );
+   
    //print starting matrix for error checking
-   printf("\n Matrix before decomp: \n");
-   for(int i = 0; i < dim; i++ ){
-      for(int j = 0; j < dim; j++ ){
-         printf(" %f", inMat[ i*dim + j ]);
-      }
-      printf("\n");
-   }
-      
+   if(TESTFLAG){
+     printf("\n Matrix before decomp: \n");
+     for(int i = 0; i < dim; i++ ){
+        for(int j = 0; j < dim; j++ ){
+           printf(" %f", inMat[ i*dim + j ]);
+        }
+        printf("\n");
+     }
+   }   
 
    //This step calls the cholesky function from cuSolver
      /* Function parameters: 
@@ -56,19 +58,21 @@ void chol(double* inMat, int dim, cublasFillMode_t uplo ){
 
   printf("\n Dev Info for cholesky: %d", *devInfo);
   
-  //print final results for checking
-  printf("\n Matrix after decomp: \n");
-   for(int i = 0; i < dim; i++ ){
-      for(int j = 0; j < dim; j++ ){
-         printf(" %f", inMat[ i*dim + j ]);
-      }
-      printf("\n");
-   }
+  if(TESTFLAG){
+    //print final results for checking
+    printf("\n Matrix after decomp: \n");
+     for(int i = 0; i < dim; i++ ){
+        for(int j = 0; j < dim; j++ ){
+           printf(" %f", inMat[ i*dim + j ]);
+        }
+        printf("\n");
+     }
+  } 
 }
 
 
 //This function generates pseudo random standard normal distribution
-void normGen( double* outputPtr, size_t n, double mean, double stddev ){
+void normGen( double* outputPtr, size_t n, double mean, double stddev, int seed ){
    //declare variables
    curandGenerator_t randHandle;
    curandStatus_t status;
@@ -83,7 +87,7 @@ void normGen( double* outputPtr, size_t n, double mean, double stddev ){
       double mean       : Given mean
       double stddev     : Given standard deviation
    */
-   status = curandSetPseudoRandomGeneratorSeed( randHandle, 1234ULL );
+   status = curandSetPseudoRandomGeneratorSeed( randHandle, seed );
    assert( status == CURAND_STATUS_SUCCESS && "seeder");
 
    status = curandGenerateNormalDouble( randHandle, outputPtr, n, mean, stddev );

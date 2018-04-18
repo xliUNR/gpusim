@@ -14,6 +14,7 @@
 #include <cusolverDn.h>
 #include <assert.h>
 #include <cuda.h>
+#include <time.h>
 //#include <curand.h>
 #include "cudaFuncs.h"
 
@@ -31,22 +32,24 @@ int main( int argc, char const *argv[])
    //initiliaze arrays for holding input data
    double* r20Arr;
    double* r20ArrNF; 
-   //double* r200Arr;
-   int r20n = 20;
+   double* r200Arr;
+   double* r200ArrNF;
 
+   int r20n = 20;
+   int r200n = 200;
    int r20Size; 
-   //int r200Size;
-   ifstream srcFile;
+   int r200Size;
+   //ifstream srcFile;
    double A0[3*3] = { 1.0, 2.0, 3.0, 2.0, 5.0, 5.0, 3.0, 5.0, 12.0 };
    double* dA0;
-   double* sim_data;
+   double* sim_r20;
+   double* sim_r200;
    //file names
    char r20file[60] = "../test_corr_matrix_d=20.txt";
    char r200file[60] = "../test_corr_matrix_d=200.txt";
 
-   //r200n = 200;
    r20Size = r20n*r20n;
-   //r200Size = r200n*r200n;
+   r200Size = r200n*r200n;
    //cuSolver 
    //cuSolverStatus_t solverStatus;
    
@@ -64,7 +67,12 @@ int main( int argc, char const *argv[])
 
    //allocated unified memory for storage of input covar matrix. 
    cudaMallocManaged(&r20Arr, r20Size*sizeof(double));
-   cudaMallocManaged(&r20ArrNF, r20Size*sizeof(double));
+   //cudaMallocManaged(&r20ArrNF, r20Size*sizeof(double));
+   cudaMallocManaged(&r200Arr, r200Size*sizeof(double));
+   //cudaMallocManaged(&r200ArrNF, r200Size*sizeof(double));
+
+   cudaMallocManaged(&sim_r20, r20Size*sizeof(double));
+   cudaMallocManaged(&sim_r200, r200Size*sizeof(double));
 
    //allocate device memory for simple testing
    cudaMallocManaged( &dA0, 9*sizeof(double) );
@@ -74,14 +82,14 @@ int main( int argc, char const *argv[])
    //cudaMallocManaged(&r200Arr, r200Size*sizeof(float));
      
 
-   //Section for reading in arrays from file
-   srcFile.open("../test_corr_matrix_d=20.txt", fstream::in);
+   /*//Section for reading in arrays from file
+   srcFile.open("../test_corr_matrix_d=200.txt", fstream::in);
    if(srcFile)
       {
         cout << endl << "SUCCESSFUL FILE OPEN";
-	 for(int i = 0; i < r20Size; i++)
+	 for(int i = 0; i < r200Size; i++)
           {
-            srcFile >> r20ArrNF[i];
+            srcFile >> r200ArrNF[i];
           } 
           
       }
@@ -92,10 +100,10 @@ int main( int argc, char const *argv[])
 
  //close file
  srcFile.close();
-
+*/
  //start timing
  
-  //Timing for file read
+  //Timing for file read r20
    cudaEvent_t readStart, readEnd;
    cudaEventCreate( &readStart );
    cudaEventCreate(  &readEnd );
@@ -108,20 +116,37 @@ int main( int argc, char const *argv[])
  else{
    cout << endl << "ERROR FILE OPENING";
  }
- 
+ /*
  //stop timing
  cudaEventRecord( readEnd, 0 );
  cudaEventSynchronize( readEnd );
  float readTime;
  cudaEventElapsedTime( &readTime, readStart, readEnd );
  //print timing results
- cout << endl << "Reading in from File took: " << readTime << " ms." << endl;
- //compare results from reading in main with function. I know reading in main works
- for(int i = 0; i < r20Size; i++){
-     if( r20Arr[i] != r20ArrNF[i] ){
-         cout << endl << "ERROR in item: " << i;
-     }
+ cout << endl << "Reading in r20: " << readTime << " ms." << endl;
+*/
+  /*//Timing for file read r200
+   cudaEventCreate( &readStart );
+   cudaEventCreate(  &readEnd );
+   cudaEventRecord( readStart, 0); 
+*/
+ //call function to read in from file
+ if( readFromFile( r200file, r200Arr, r200Size) ){
+   cout << endl << "FILE OPEN SUCCESS!";
+ }  
+ else{
+   cout << endl << "ERROR FILE OPENING";
  }
+ 
+ //stop timing
+ cudaEventRecord( readEnd, 0 );
+ cudaEventSynchronize( readEnd );
+ float readTime;
+ cudaEventElapsedTime( &readTime, readStart, readEnd );
+ 
+ //print timing results
+ cout << endl << "Reading in r200: " << readTime << " ms." << endl;
+ 
 /* //test input read by printing results
   printf("\n INITIAL MATRIX\n");
  
@@ -184,14 +209,14 @@ int main( int argc, char const *argv[])
   */
  
   //printf("Dev Info: %d", *devInfo);
-//Timing for cholesky
+//Timing for cholesky r20
 cudaEvent_t cholStart, cholEnd;
 cudaEventCreate( &cholStart ); 
 cudaEventCreate( &cholEnd );
 cudaEventRecord( cholStart, 0 );
 
 //call function to perform cholesky
-chol( dA0, 3, CUBLAS_FILL_MODE_UPPER );   
+chol( r200Arr, r200n, CUBLAS_FILL_MODE_UPPER );   
 //synchronize threads
 cudaDeviceSynchronize();
 
@@ -200,7 +225,26 @@ cudaEventRecord( cholEnd, 0);
 cudaEventSynchronize( cholEnd );
 float cholTime;
 cudaEventElapsedTime( &cholTime, cholStart, cholEnd );
+cout << endl << "Cholesky r20 Took: " << cholTime << " ms." << endl;
 
+
+//Timing for cholesky r200
+//cudaEventCreate( &cholStart ); 
+//cudaEventCreate( &cholEnd );
+//cudaEventRecord( cholStart, 0 );
+
+/*//call function to perform cholesky
+chol( r200Arr, 200, CUBLAS_FILL_MODE_UPPER );   
+//synchronize threads
+cudaDeviceSynchronize();
+
+//End timing
+cudaEventRecord( cholEnd, 0);
+cudaEventSynchronize( cholEnd );
+float cholTime1;
+cudaEventElapsedTime( &cholTime, cholStart, cholEnd );
+cout << endl << "Cholesky r200 Took: " << cholTime1 << " ms." << endl;
+*/
    //fclose(fp);
   /* fp = fopen("test_corr_matrix_d=200.txt", "r"); 
    if(fp)
@@ -211,7 +255,7 @@ cudaEventElapsedTime( &cholTime, cholStart, cholEnd );
 	   }
       }*/
 
-   //test input read by printing results
+   /*//test input read by printing results
   printf("\n DECOMP RESULTS: \n");
   for(int i = 0; i < 3; i++ ){
     for(int j = 0; j <3; j++ )
@@ -219,21 +263,36 @@ cudaEventElapsedTime( &cholTime, cholStart, cholEnd );
         printf(" %f", dA0[i*3+j]);
       } 
       printf("\n");
-   }
+   }*/
 //generate random variables matrix
 size_t n = 10;
 double * randMat;
+int time1 = time(NULL);
 cudaMallocManaged( &randMat, 10*sizeof(double) );
-normGen( randMat, n, 0.0,1.0 );
 
-//print results to screen
+//timing
+cudaEvent_t randStart, randEnd;
+cudaEventCreate( &randStart ); 
+cudaEventCreate( &randEnd );
+cudaEventRecord( randStart, 0 );
+
+normGen( sim_r200, r200Size, 0.0,1.0, time1 );
+
+cudaEventRecord( randEnd, 0);
+cudaEventSynchronize( randEnd );
+float randTime;
+cudaEventElapsedTime( &randTime, randStart, randEnd );
+cout << endl << "RNG r200: " << randTime << " ms." << endl;
+
+cout <<endl << "TIME SEED: " << time1;
+/*//print results to screen
 printf("\n RANDOM MATRIX: \n");
-for(int i = 0; i < 3; i++ ){
-  for(int j=0; j < 3; j++){
-    printf(" %f", randMat[i*3+j]);
+for(int i = 0; i < 200; i++ ){
+  for(int j=0; j < 200; j++){
+    printf(" %f", sim_r200[i*3+j]);
     }
   printf("\n");
- }  
+ }  */
 
     /*for(int i = 0; i < 200; i++ ){
       for(int j = 0; j <200; j++ )
@@ -247,6 +306,7 @@ for(int i = 0; i < 3; i++ ){
 //curandGenerateNormalDouble()
    //free memory
    cudaFree(r20Arr);
+   cudaFree(r200Arr);
    //cudaFree(r20work);
    //cudaFree(r200);
    cudaFree(dA0);
