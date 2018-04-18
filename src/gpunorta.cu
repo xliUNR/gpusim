@@ -20,16 +20,8 @@
 using namespace std;
 
 
-<<<<<<< HEAD
 //////////////////////////// Function prototypes  /////////////////////////////
-bool readFromFile(char const*, double*, int );
-
-=======
-
-////////////////////////  Function Prototypes  ////////////////////////////////
-bool parseFromFile(const char* fileName, double* storage );
->>>>>>> ad3a41d9239536586ea0e302b0e87e363257e1dc
-
+bool readFromFile(const char*, double*, int );
 
 ///////////////////////////////////////////////////////////////////////////////
 /////////////////////////////////    Main   ///////////////////////////////////
@@ -37,20 +29,20 @@ int main( int argc, char const *argv[])
 {
  //initialize variables
    //initiliaze arrays for holding input data
-   double* r20Arr; 
+   double* r20Arr;
+   double* r20ArrNF; 
    //double* r200Arr;
    int r20n = 20;
 
    int r20Size; 
    //int r200Size;
    ifstream srcFile;
-   float a;
    double A0[3*3] = { 1.0, 2.0, 3.0, 2.0, 5.0, 5.0, 3.0, 5.0, 12.0 };
    double* dA0;
    double* sim_data;
    //file names
-   char* r20file = "../test_corr_matrix_d=20.txt";
-   char* r200file = "../test_corr_matrix_d=200.txt";
+   char r20file[60] = "../test_corr_matrix_d=20.txt";
+   char r200file[60] = "../test_corr_matrix_d=200.txt";
 
    //r200n = 200;
    r20Size = r20n*r20n;
@@ -72,7 +64,8 @@ int main( int argc, char const *argv[])
 
    //allocated unified memory for storage of input covar matrix. 
    cudaMallocManaged(&r20Arr, r20Size*sizeof(double));
-   
+   cudaMallocManaged(&r20ArrNF, r20Size*sizeof(double));
+
    //allocate device memory for simple testing
    cudaMallocManaged( &dA0, 9*sizeof(double) );
    
@@ -80,24 +73,15 @@ int main( int argc, char const *argv[])
    cudaMemcpy( dA0, A0, 9*sizeof(double), cudaMemcpyHostToDevice );
    //cudaMallocManaged(&r200Arr, r200Size*sizeof(float));
      
-   //Timing for file read
-   cudaEvent_t readStart, readEnd;
-   cudaEventCreate( &readStart );
-   cudaEventCreate(  &readEnd );
-   cudaEventRecord( readStart, 0); 
 
    //Section for reading in arrays from file
-   /*srcFile.open("../test_corr_matrix_d=20.txt", fstream::in);
+   srcFile.open("../test_corr_matrix_d=20.txt", fstream::in);
    if(srcFile)
       {
         cout << endl << "SUCCESSFUL FILE OPEN";
 	 for(int i = 0; i < r20Size; i++)
           {
-            srcFile >> a;
-	          //cout << a << "|";
-            if( !(i % 20) ){ cout << endl;}
-
-            r20Arr[i] = a;
+            srcFile >> r20ArrNF[i];
           } 
           
       }
@@ -108,9 +92,18 @@ int main( int argc, char const *argv[])
 
  //close file
  srcFile.close();
-*/
- if( readFromFile( r20file, r20Arr, 20) ){
-   cout << endl << "FILE OPEN SUCCESS!"
+
+ //start timing
+ 
+  //Timing for file read
+   cudaEvent_t readStart, readEnd;
+   cudaEventCreate( &readStart );
+   cudaEventCreate(  &readEnd );
+   cudaEventRecord( readStart, 0); 
+
+ //call function to read in from file
+ if( readFromFile( r20file, r20Arr, r20Size) ){
+   cout << endl << "FILE OPEN SUCCESS!";
  }  
  else{
    cout << endl << "ERROR FILE OPENING";
@@ -121,16 +114,26 @@ int main( int argc, char const *argv[])
  cudaEventSynchronize( readEnd );
  float readTime;
  cudaEventElapsedTime( &readTime, readStart, readEnd );
- //test input read by printing results
+ //print timing results
+ cout << endl << "Reading in from File took: " << readTime << " ms." << endl;
+ //compare results from reading in main with function. I know reading in main works
+ for(int i = 0; i < r20Size; i++){
+     if( r20Arr[i] != r20ArrNF[i] ){
+         cout << endl << "ERROR in item: " << i;
+     }
+ }
+/* //test input read by printing results
   printf("\n INITIAL MATRIX\n");
  
-  for(int i = 0; i < 3; i++ ){
-    for(int j = 0; j <3; j++ )
+  for(int i = 0; i < 20; i++ ){
+    for(int j = 0; j <20; j++ )
       {
-        printf(" %f", dA0[i*3+j]);
+        printf(" %f", r20Arr[i*3+j]);
       } 
       printf("\n");
-   } 
+   }
+*/
+
 //cholesky decomp with floats (specified by S)
 /*  //initialize variables
   cusolverDnHandle_t csrHandle = NULL;
@@ -249,16 +252,15 @@ for(int i = 0; i < 3; i++ ){
    cudaFree(dA0);
    cudaFree(randMat);   
 }
-<<<<<<< HEAD
 
 
 /////////////////// Function Implementation ///////////////////////////////////
-bool readFromFile( const char* fileName, double* output, int n ){
+bool readFromFile( const char* fileName, double* output, int size ){
    ifstream source;
    source.open( fileName, fstream::in );
 
    if( source ){
-       for( int i = 0; i < size < n; i++ )
+       for( int i = 0; i < size; i++ )
          {
             source >> output[i];
          }
@@ -272,20 +274,3 @@ bool readFromFile( const char* fileName, double* output, int n ){
      }
 
 }
-=======
-////////////////   Function Declarations  /////////////////////////////////////
-bool parseFromFile(const char* fileName, double* storage ){
-  ifstream srcFile;
-  srcFile.open( fileName, fstream::in );
-  //check for success
-  if( srcFile ){
-    cout << endl << "SUCCESSFUL FILE OPEN";
-
-    return true;
-  }
-  else{
-    return false;
-  }
-
-}
->>>>>>> ad3a41d9239536586ea0e302b0e87e363257e1dc
