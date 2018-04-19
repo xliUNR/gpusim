@@ -7,6 +7,12 @@
 #include <cusolverDn.h>
 #include <curand.h>
 
+//This function does the cholesky decomposition
+/* 
+  input parameters: inMat: input matrix
+                    dim: dimension of matrix
+                    uplo: matrix fill type
+*/
 void chol(double* inMat, int dim, cublasFillMode_t uplo ){
    //variables for cuSolver cholesky 
    cusolverDnHandle_t csrHandle = NULL;
@@ -68,6 +74,10 @@ void chol(double* inMat, int dim, cublasFillMode_t uplo ){
         printf("\n");
      }
   } 
+
+  //destroy cusolver handle
+  status = cusolverDnDestroy( csrHandle );
+  assert( status == CUSOLVER_STATUS_SUCCESS );
 }
 
 
@@ -103,5 +113,29 @@ void normGen( double* outputPtr, size_t n, double mean, double stddev, int seed 
    }*/
    status = curandDestroyGenerator( randHandle );
    assert( status == CURAND_STATUS_SUCCESS && "destroyer" );
+}
 
+//square matrix mult
+//C = alpha*op(A)op(B) + beta*C
+void matMult( double* matA, double* matB, double* outMat, int dim ){
+  //declare variables
+  cublasHandle_t myHandle;
+  cublasStatus_t status;
+  double zero = 0;
+  double one = 1;
+  //variables for if matrix is normal, transpose, or hermitian t.
+  cublasOperation_t transa = CUBLAS_OP_N;
+  cublasOperation_t transb = CUBLAS_OP_N;
+
+  //create library instance
+  status = cublasCreate( &myHandle );
+  assert( status == CUBLAS_STATUS_SUCCESS );
+
+  status = cublasDgemm( myHandle, transa, transb, dim, dim, dim, &one, matB,
+                                            dim, matA, dim, &zero, outMat, dim );
+
+  assert( status == CUBLAS_STATUS_SUCCESS );
+
+  //destroy cublas instance
+  cublasDestroy( myHandle );
 }

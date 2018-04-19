@@ -1,7 +1,7 @@
 CC=/usr/local/cuda-9.0/bin/nvcc
 INCLUDES=-I../include
 O_FILES=gpunorta.o cudaFuncs.o
-LIBS = -lcusolver -lcudart -lcurand
+LIBS = -lcusolver -lcudart -lcurand -lcublas
 LIBDIRS= -L/usr/local/cuda-9.0/lib64
 CC_FLAGS= -Xcompiler -fopenmp -g -G
 all: $(O_FILES)

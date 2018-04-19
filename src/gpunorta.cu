@@ -264,7 +264,7 @@ cout << endl << "Cholesky r200 Took: " << cholTime1 << " ms." << endl;
       } 
       printf("\n");
    }*/
-//generate random variables matrix
+///////// generate random variable //////////////////////////////
 size_t n = 10;
 double * randMat;
 int time1 = time(NULL);
@@ -302,15 +302,49 @@ for(int i = 0; i < 200; i++ ){
         printf("\n");
    }  
      */ 
+/////////////////////  matrix multiplication  /////////////////////////////////
+cudaEvent_t multStart, multEnd;
+cudaEventCreate( &multStart );
+cudaEventCreate( &multEnd );
+cudaEventRecord( multStart, 0 );
+double* M1;
+double* M2;
+double* M3;
+
+//allocate memory for matrix testing
+cudaMallocManaged( &M1, 4*sizeof(double) );
+cudaMallocManaged( &M2, 4*sizeof(double) );
+cudaMallocManaged( &M3, 4*sizeof(double) );
+
+//fill matrices with values
+for(int i = 0; i < 4; i++ ){
+  M1[i] = 2.0;
+  M2[i] = 2.0;
+}
+
+matMult(M1, M2, M3, 2);
+
+//print results
+cout << "MATRIX MULT RESULTS" << endl;
+for(int i = 0; i < 2; i++ ){
+  for(int j = 0; j < 2; j++ ){
+    cout << M3[i*2+j];
+  }
+  cout << endl;
+}
+
 ///////// generate random variable //////////////////////////////
-//curandGenerateNormalDouble()
+
    //free memory
    cudaFree(r20Arr);
    cudaFree(r200Arr);
    //cudaFree(r20work);
    //cudaFree(r200);
    cudaFree(dA0);
-   cudaFree(randMat);   
+   cudaFree(randMat); 
+   cudaFree(M1);
+   cudaFree(M2);
+   cudaFree(M3);  
 }
 
 
