@@ -6,6 +6,7 @@
 #include "cudaFuncs.h"
 #include <cusolverDn.h>
 #include <curand.h>
+#include "math.h"
 
 //This function does the cholesky decomposition
 /* 
@@ -13,13 +14,13 @@
                     dim: dimension of matrix
                     uplo: matrix fill type
 */
-void chol(double* inMat, int dim, cublasFillMode_t uplo ){
+void chol(double* inMat, int dim, cublasFillMode_t uplo ){×
    //variables for cuSolver cholesky 
    cusolverDnHandle_t csrHandle = NULL;
-   cusolverStatus_t status;
+   cusolverStatus_t status;[MaÔ[MaÔ[MaÔ[MaÔ
    bool TESTFLAG = false;
    //variables for workspace
-   int workSize = 0;
+   int workSize = 0;[MaÓ[MaÓ[MaÓ
    double* workPtr;
 
    int* devInfo; //used for error checking
@@ -28,7 +29,7 @@ void chol(double* inMat, int dim, cublasFillMode_t uplo ){
    cudaMallocManaged( &devInfo, sizeof(int) );
    //create handle for library
    status = cusolverDnCreate( &csrHandle );
-   //get buffer size
+   //get buffer size[MaÓ[MaÓ
    status = cusolverDnDpotrf_bufferSize(csrHandle, uplo, dim, 
                                                    inMat, dim, &workSize );
    assert( status == CUSOLVER_STATUS_SUCCESS );
@@ -40,10 +41,10 @@ void chol(double* inMat, int dim, cublasFillMode_t uplo ){
      printf("\n Matrix before decomp: \n");
      for(int i = 0; i < dim; i++ ){
         for(int j = 0; j < dim; j++ ){
-           printf(" %f", inMat[ i*dim + j ]);
+           printf(" %f", inM[MaÓ[MaÓ[MaÓ[MaÓat[ i*dim + j ]);
         }
         printf("\n");
-     }
+     }[MaÓ[MaÓ[MaÓ
    }   
 
    //This step calls the cholesky function from cuSolver
@@ -52,10 +53,10 @@ void chol(double* inMat, int dim, cublasFillMode_t uplo ){
      cublasFillMode_t: Indicates of matrix A lower or upper part stored
      int: dimension of matrix A
      float*: pointer to input matrix
-     int: leading dimension of 2D array used to store matrix
+     int: leading [MaÓ[MaÓdimension of 2D array used to store matrix
      float*:workspace pointer
      int: size of workspace
-     int*: return for error checking
+     int*: return for erro[MaÓr checking
      */ 
   status = cusolverDnDpotrf(csrHandle, uplo, dim, inMat, dim, 
                                           workPtr, workSize, devInfo);
@@ -138,4 +139,22 @@ void matMult( double* matA, double* matB, double* outMat, int dim ){
 
   //destroy cublas instance
   cublasDestroy( myHandle );
+}
+
+//inverse CDF function, calls device function normcdfinv from CUDA math API
+__global__ void invCDF( double* inMat, int n ){
+  //initialzie variables for block id and thread id
+    int bidx, tid;  
+    bidx = blockIdx.x;
+    tid = threadIdx.x;
+
+    //grid stride loop
+    for( int i = blockIdx.x * blockDim.x + threadIdx.x;  i < n; i+= blockDim.x * gridDim.x ){
+       inMat[i] = normcdfinv( inMat[i] ); 
+          
+    }
+
+
+
+
 }

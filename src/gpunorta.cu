@@ -162,7 +162,7 @@ int main( int argc, char const *argv[])
 //cholesky decomp with floats (specified by S)
 /*  //initialize variables
   cusolverDnHandle_t csrHandle = NULL;
-  cublasFillMode_t uplo= CUBLAS_FILL_MODE_UPPER;
+  cublasFillMode_t jplo= CUBLAS_FILL_MODE_UPPER;
   cusolverStatus_t status;
   int r20workSize = 0;
   double* r20work;
@@ -303,18 +303,16 @@ for(int i = 0; i < 200; i++ ){
    }  
      */ 
 /////////////////////  matrix multiplication  /////////////////////////////////
-cudaEvent_t multStart, multEnd;
+/*cudaEvent_t multStart, multEnd;
 cudaEventCreate( &multStart );
 cudaEventCreate( &multEnd );
-cudaEventRecord( multStart, 0 );
+cudaEventRecord( multStart, 0 );*/
 double* M1;
 double* M2;
-double* M3;
 
 //allocate memory for matrix testing
 cudaMallocManaged( &M1, 4*sizeof(double) );
 cudaMallocManaged( &M2, 4*sizeof(double) );
-cudaMallocManaged( &M3, 4*sizeof(double) );
 
 //fill matrices with values
 for(int i = 0; i < 4; i++ ){
@@ -322,19 +320,33 @@ for(int i = 0; i < 4; i++ ){
   M2[i] = 2.0;
 }
 
-matMult(M1, M2, M3, 2);
+matMult(M1, M2, M1, 2);
 
 //print results
 cout << "MATRIX MULT RESULTS" << endl;
 for(int i = 0; i < 2; i++ ){
   for(int j = 0; j < 2; j++ ){
-    cout << M3[i*2+j];
+    cout << M1[i*2+j];
   }
   cout << endl;
 }
 
-///////// generate random variable //////////////////////////////
+ //multiplication of cholesky w/ random matrix to get correlated random matrix
+ cudaEvent_t multStart, multEnd;
+ cudaEventCreate( &multStart );
+ cudaEventCreate( &multEnd );
+ cudaEventRecord( multStart, 0 );
+ 
+ matMult(r200Arr, sim_r200, sim_r200, r200n ); 
 
+ cudaEventRecord( multEnd, 0);
+ cudaEventSynchronize( multEnd );
+ float multTime;
+ cudaEventElapsedTime( &multTime, multStart, multEnd );
+ cout << endl << "mult r20: " << multTime << " ms." << endl;
+
+ 
+ 
    //free memory
    cudaFree(r20Arr);
    cudaFree(r200Arr);
@@ -344,9 +356,9 @@ for(int i = 0; i < 2; i++ ){
    cudaFree(randMat); 
    cudaFree(M1);
    cudaFree(M2);
-   cudaFree(M3);  
+   cudaFree(sim_r20);
+   cudaFree(sim_r200);
 }
-
 
 /////////////////// Function Implementation ///////////////////////////////////
 bool readFromFile( const char* fileName, double* output, int size ){
