@@ -14,13 +14,13 @@
                     dim: dimension of matrix
                     uplo: matrix fill type
 */
-void chol(double* inMat, int dim, cublasFillMode_t uplo ){×
+void chol(double* inMat, int dim, cublasFillMode_t uplo ){
    //variables for cuSolver cholesky 
    cusolverDnHandle_t csrHandle = NULL;
-   cusolverStatus_t status;[MaÔ[MaÔ[MaÔ[MaÔ
+   cusolverStatus_t status;
    bool TESTFLAG = false;
    //variables for workspace
-   int workSize = 0;[MaÓ[MaÓ[MaÓ
+   int workSize = 0;
    double* workPtr;
 
    int* devInfo; //used for error checking
@@ -41,10 +41,10 @@ void chol(double* inMat, int dim, cublasFillMode_t uplo ){×
      printf("\n Matrix before decomp: \n");
      for(int i = 0; i < dim; i++ ){
         for(int j = 0; j < dim; j++ ){
-           printf(" %f", inM[MaÓ[MaÓ[MaÓ[MaÓat[ i*dim + j ]);
+           printf(" %f", inMat[ i*dim + j ]);
         }
         printf("\n");
-     }[MaÓ[MaÓ[MaÓ
+     }
    }   
 
    //This step calls the cholesky function from cuSolver
