@@ -18,7 +18,7 @@ void chol(double* inMat, int dim, cublasFillMode_t uplo ){
    //variables for cuSolver cholesky 
    cusolverDnHandle_t csrHandle = NULL;
    cusolverStatus_t status;
-   bool TESTFLAG = false;
+   bool TESTFLAG = true;
    //variables for workspace
    int workSize = 0;
    double* workPtr;

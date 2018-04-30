@@ -41,7 +41,11 @@ int main( int argc, char const *argv[])
    int r200Size;
    //ifstream srcFile;
    double A0[3*3] = { 1.0, 2.0, 3.0, 2.0, 5.0, 5.0, 3.0, 5.0, 12.0 };
+   double AC[6] = {1.0, 2.0, 3.0, 5.0, 5.0, 12.0};
+   double AR[6] = {1.0, 2.0, 5.0, 3.0, 5.0, 12.0};
    double* dA0;
+   double* dAR;
+   double* dAC;
    double* sim_r20;
    double* sim_r200;
    //file names
@@ -76,9 +80,14 @@ int main( int argc, char const *argv[])
 
    //allocate device memory for simple testing
    cudaMallocManaged( &dA0, 9*sizeof(double) );
-   
+   cudaMallocManaged( &dAR, 6*sizeof(double) );
+   cudaMallocManaged( &dAC, 6*sizeof(double) );
+
    //copy explicitly defined matrix into device
    cudaMemcpy( dA0, A0, 9*sizeof(double), cudaMemcpyHostToDevice );
+   cudaMemcpy( dAR, AR, 6*sizeof(double), cudaMemcpyHostToDevice );
+   cudaMemcpy( dAC, AC, 6*sizeof(double), cudaMemcpyHostToDevice );
+
    //cudaMallocManaged(&r200Arr, r200Size*sizeof(float));
      
 
@@ -216,10 +225,12 @@ cudaEventCreate( &cholEnd );
 cudaEventRecord( cholStart, 0 );
 
 //call function to perform cholesky
-chol( r200Arr, r200n, CUBLAS_FILL_MODE_UPPER );   
+//chol( r200Arr, r200n, CUBLAS_FILL_MODE_UPPER );   
 //synchronize threads
 cudaDeviceSynchronize();
-
+chol(dAR, 3, CUBLAS_FILL_MODE_LOWER );
+cudaDeviceSynchronize();
+chol(dAC, 3, CUBLAS_FILL_MODE_LOWER );
 //End timing
 cudaEventRecord( cholEnd, 0);
 cudaEventSynchronize( cholEnd );
