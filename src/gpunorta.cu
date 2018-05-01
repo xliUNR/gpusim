@@ -379,7 +379,7 @@ cout << endl;
 int ffff  = 1;
 dim3 grid(1);
 dim3 block(6);
-//invCDF<<<grid,block>>>(dtestArr, 6);
+//normCDF<<<grid,block>>>(dtestArr, 6);
 cudaDeviceSynchronize();
 testFunc<<<grid,block>>>( dtestArr, 6 );
 cudaDeviceSynchronize();

@@ -142,8 +142,9 @@ void matMult( double* matA, double* matB, double* outMat, int dim ){
   cublasDestroy( myHandle );
 }
 
-//inverse CDF function, calls device function normcdfinv from CUDA math API
-__global__ void invCDF( double* inMat, int n ){
+//This device function calculates the normal cdf of the input
+// calls normcdf from CUDA math API
+__global__ void normCDF( double* inMat, int n ){
   //initialzie variables for block id and thread id
     //int bidx, tid;  
     //bidx = blockIdx.x;
@@ -153,7 +154,7 @@ __global__ void invCDF( double* inMat, int n ){
     for( int i = blockIdx.x * blockDim.x + threadIdx.x;  i < n; i+= blockDim.x * gridDim.x ){
       //printf("HELLO FROM INVCDF loop! \n");
        
-       inMat[i] = normcdfinv( inMat[i] ); 
+       inMat[i] = normcdf( inMat[i] ); 
        printf("%f ", inMat[i] );
           
     }
