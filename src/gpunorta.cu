@@ -17,6 +17,7 @@
 #include <time.h>
 //#include <curand.h>
 #include "cudaFuncs.h"
+#include "stats.hpp"
 
 using namespace std;
 
@@ -43,6 +44,9 @@ int main( int argc, char const *argv[])
    double A0[3*3] = { 1.0, 2.0, 3.0, 2.0, 5.0, 5.0, 3.0, 5.0, 12.0 };
    double AC[6] = {1.0, 2.0, 3.0, 5.0, 5.0, 12.0};
    double AR[6] = {1.0, 2.0, 5.0, 3.0, 5.0, 12.0};
+   double testdata = 0.1;
+   double testArr[6] = {0.1, 0.1, 0.1, 0.1, 0.1, 0.1 };
+   double *dtestArr;
    double* dA0;
    double* dAR;
    double* dAC;
@@ -82,11 +86,13 @@ int main( int argc, char const *argv[])
    cudaMallocManaged( &dA0, 9*sizeof(double) );
    cudaMallocManaged( &dAR, 6*sizeof(double) );
    cudaMallocManaged( &dAC, 6*sizeof(double) );
+   cudaMallocManaged( &dtestArr, 6*sizeof(double) );
 
    //copy explicitly defined matrix into device
    cudaMemcpy( dA0, A0, 9*sizeof(double), cudaMemcpyHostToDevice );
    cudaMemcpy( dAR, AR, 6*sizeof(double), cudaMemcpyHostToDevice );
    cudaMemcpy( dAC, AC, 6*sizeof(double), cudaMemcpyHostToDevice );
+   cudaMemcpy( dtestArr, testArr, 6*sizeof(double), cudaMemcpyHostToDevice );
 
    //cudaMallocManaged(&r200Arr, r200Size*sizeof(float));
      
@@ -355,8 +361,33 @@ for(int i = 0; i < 2; i++ ){
  float multTime;
  cudaEventElapsedTime( &multTime, multStart, multEnd );
  cout << endl << "mult r20: " << multTime << " ms." << endl;
-
  
+ /*//calling qnorm from stats lib works.
+ cout << "TESTING FOR STATS LIBRARY" << endl;
+ cout << "b4 Value = " << testdata;
+ cout << "after value = " << stats::qnorm(testdata) << endl; 
+*/
+
+//testing to see if library can be called from kernel
+cout << "TESTING KERNEL " << endl;
+cout << "B4 ARRAY : ";
+for(int i = 0; i < 6; i++ ){
+  cout << dtestArr[i] << ' ';
+}
+
+cout << endl;
+int ffff  = 1;
+dim3 grid(1);
+dim3 block(6);
+//invCDF<<<grid,block>>>(dtestArr, 6);
+cudaDeviceSynchronize();
+testFunc<<<grid,block>>>( dtestArr, 6 );
+cudaDeviceSynchronize();
+cout << "AFTER ARRAY: ";
+for(int i = 0; i < 6; i++){
+  cout << dtestArr[i] << ' ';
+}
+cout << endl;
  
    //free memory
    cudaFree(r20Arr);
@@ -370,6 +401,8 @@ for(int i = 0; i < 2; i++ ){
    cudaFree(sim_r20);
    cudaFree(sim_r200);
 }
+
+
 
 /////////////////// Function Implementation ///////////////////////////////////
 bool readFromFile( const char* fileName, double* output, int size ){
@@ -391,3 +424,4 @@ bool readFromFile( const char* fileName, double* output, int size ){
      }
 
 }
+

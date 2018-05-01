@@ -7,6 +7,7 @@
 #include <cusolverDn.h>
 #include <curand.h>
 #include "math.h"
+#include "stats.hpp"
 
 //This function does the cholesky decomposition
 /* 
@@ -29,7 +30,7 @@ void chol(double* inMat, int dim, cublasFillMode_t uplo ){
    cudaMallocManaged( &devInfo, sizeof(int) );
    //create handle for library
    status = cusolverDnCreate( &csrHandle );
-   //get buffer size[MaÓ[MaÓ
+   //get buffer size
    status = cusolverDnDpotrf_bufferSize(csrHandle, uplo, dim, 
                                                    inMat, dim, &workSize );
    assert( status == CUSOLVER_STATUS_SUCCESS );
@@ -53,10 +54,10 @@ void chol(double* inMat, int dim, cublasFillMode_t uplo ){
      cublasFillMode_t: Indicates of matrix A lower or upper part stored
      int: dimension of matrix A
      float*: pointer to input matrix
-     int: leading [MaÓ[MaÓdimension of 2D array used to store matrix
+     int: leading dimension of 2D array used to store matrix
      float*:workspace pointer
      int: size of workspace
-     int*: return for erro[MaÓr checking
+     int*: return for error checking
      */ 
   status = cusolverDnDpotrf(csrHandle, uplo, dim, inMat, dim, 
                                           workPtr, workSize, devInfo);
@@ -144,17 +145,33 @@ void matMult( double* matA, double* matB, double* outMat, int dim ){
 //inverse CDF function, calls device function normcdfinv from CUDA math API
 __global__ void invCDF( double* inMat, int n ){
   //initialzie variables for block id and thread id
-    int bidx, tid;  
-    bidx = blockIdx.x;
-    tid = threadIdx.x;
+    //int bidx, tid;  
+    //bidx = blockIdx.x;
+    //tid = threadIdx.x;
 
     //grid stride loop
     for( int i = blockIdx.x * blockDim.x + threadIdx.x;  i < n; i+= blockDim.x * gridDim.x ){
+      //printf("HELLO FROM INVCDF loop! \n");
+       
        inMat[i] = normcdfinv( inMat[i] ); 
+       printf("%f ", inMat[i] );
           
     }
 
+}
 
+//function for testing calling stat library from kernel
+__global__ void testFunc( double* inMat, int cols ){
+  //int bidx, tid;
+  double temp;
 
+  //temp = stats::qnorm( inMat[ blockIdx.x * blockDim.x + threadIdx.x ] );
 
+  //grid stride
+  for( int i = blockIdx.x * blockDim.x + threadIdx.x; i < cols; i+= blockDim.x*gridDim.x ){
+    
+    inMat[i] = stats::qnorm( inMat[i] );
+    printf("%f ", inMat[i] );
+  }
+  
 }

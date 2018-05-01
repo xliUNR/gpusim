@@ -15,4 +15,6 @@ void matMult( double*, double*, double*, int );
 
 __global__ void invCDF( double*, int );
 
+__global__ void testFunc( double*, int );
+
 #endif
