@@ -1,0 +1,6 @@
+poisson 1 2
+exponential 1
+gamma 2.0 2.0
+normal 0 1
+beta 2 5
+binomial 40 0.5

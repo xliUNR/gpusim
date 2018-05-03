@@ -15,15 +15,29 @@
 #include <assert.h>
 #include <cuda.h>
 #include <time.h>
-//#include <curand.h>
+#include <string.h>
+
 #include "cudaFuncs.h"
 #include "stats.hpp"
 
 using namespace std;
 
 
+///////////////////////////  struct declaration  //////////////////////////////
+
+//struct of arrays of distribution and their parameters
+struct distStruct
+   {
+       int* distKey;
+       float** params; 
+   };
+
+
 //////////////////////////// Function prototypes  /////////////////////////////
 bool readFromFile(const char*, double*, int );
+bool readDistFile( const char*, distStruct*, int );
+
+
 
 ///////////////////////////////////////////////////////////////////////////////
 /////////////////////////////////    Main   ///////////////////////////////////
@@ -55,9 +69,17 @@ int main( int argc, char const *argv[])
    //file names
    char r20file[60] = "../test_corr_matrix_d=20.txt";
    char r200file[60] = "../test_corr_matrix_d=200.txt";
+   char distFile[60] = "../distributions.txt";
 
    r20Size = r20n*r20n;
    r200Size = r200n*r200n;
+
+   //initialize distribution struct for inverse prob
+   distStruct dists;
+   dists.distKey = new int[ 6 ];
+   dists.params = new float*[ 6 ];
+
+
    //cuSolver 
    //cuSolverStatus_t solverStatus;
    
@@ -96,26 +118,6 @@ int main( int argc, char const *argv[])
 
    //cudaMallocManaged(&r200Arr, r200Size*sizeof(float));
      
-
-   /*//Section for reading in arrays from file
-   srcFile.open("../test_corr_matrix_d=200.txt", fstream::in);
-   if(srcFile)
-      {
-        cout << endl << "SUCCESSFUL FILE OPEN";
-	 for(int i = 0; i < r200Size; i++)
-          {
-            srcFile >> r200ArrNF[i];
-          } 
-          
-      }
-    else
-      {
-        cout << std::endl << "ERROR OPENING FILE";
-      }
-
- //close file
- srcFile.close();
-*/
  //start timing
  
   //Timing for file read r20
@@ -174,55 +176,6 @@ int main( int argc, char const *argv[])
    }
 */
 
-//cholesky decomp with floats (specified by S)
-/*  //initialize variables
-  cusolverDnHandle_t csrHandle = NULL;
-  cublasFillMode_t jplo= CUBLAS_FILL_MODE_UPPER;
-  cusolverStatus_t status;
-  int r20workSize = 0;
-  double* r20work;
-  int* devInfo; //used for error checking
-  
-  cudaMallocManaged(&devInfo, sizeof(int));
-  //double* r200work;
-  //create cusolver handle 
-  status = cusolverDnCreate(&csrHandle);
-  assert(CUSOLVER_STATUS_SUCCESS == status);
-
-  //This is the Cholesky decomp step 
-  //First calculate size of workspace
-  */
-  //float r200work;
-  /*status = cusolverDnDpotrf_bufferSize(csrHandle, 
-                                uplo, r20n, r20Arr, r20n, &r20workSize);
-  status = cusolverDnDpotrf_bufferSize(csrHandle, uplo, 3, dA0, 3, &r20workSize);
-  assert(CUSOLVER_STATUS_SUCCESS == status );
-
-  //cusolverDnSpotrf_bufferSize(csrHandle, 
-  //                              uplo, r200n, r200Arr, r200n, r200workSize);
- 
-  //Allocate memory for workspace
-  cudaMallocManaged( &r20work, r20workSize*sizeof(double) );
-  //cudaMallocManaged(&r200work, r200workSize*sizeof(float));
-  
-  //This step calls the cholesky function from cuSolver
-     Function parameters: 
-     cusolverDnHandle_t: handle to cuSolver library
-     cublasFillMode_t: Indicates of matrix A lower or upper part stored
-     int: dimension of matrix A
-     float*: pointer to input matrix
-     int: leading dimension of 2D array used to store matrix
-     float*:workspace pointer
-     int: size of workspace
-     int*: return for error checking
-
-
-  
-  cusolverDnDpotrf(csrHandle, uplo, 3, dA0, 3, r20work, r20workSize, devInfo);
-  cusolverDnDpotrf(csrHandle, uplo, r20n, r20Arr, r20n, 
-                                      r20work, r20workSize, devInfo); 
-  */
- 
   //printf("Dev Info: %d", *devInfo);
 //Timing for cholesky r20
 cudaEvent_t cholStart, cholEnd;
@@ -410,7 +363,7 @@ bool readFromFile( const char* fileName, double* output, int size ){
    source.open( fileName, fstream::in );
 
    if( source ){
-       for( int i = 0; i < size; i++ )
+      for( int i = 0; i < size; i++ )
          {
             source >> output[i];
          }
@@ -422,6 +375,39 @@ bool readFromFile( const char* fileName, double* output, int size ){
      source.close();   
      return false;
      }
+
+}
+
+bool readDistFile(const char* fileName, distStruct* dists, int numDists ){
+   ifstream source;
+   char distName[20];
+   source.open( fileName, fstream::in );
+
+   if( source ){
+      for( int i = 0; i < numDists; i++ ){ 
+         source >> distName;
+         
+         if( strcmp( "beta", distName) == 0 ){
+            dists->distKey[i] = 0;
+            dists->params[i] = new float[2];
+            source >> dists->params[i][0];
+            source >> dists->params[i][1];
+         }
+
+         else if( strcmp( "binomial", distName) == 0 ){
+            dists->distKey[i] = 1;
+         }
+
+      }
+
+      return true;  
+   }
+
+   else{
+      source.close();
+      return false;
+   }
+
 
 }
 
