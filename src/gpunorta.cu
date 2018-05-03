@@ -24,14 +24,12 @@ using namespace std;
 
 
 ///////////////////////////  struct declaration  //////////////////////////////
-
 //struct of arrays of distribution and their parameters
 struct distStruct
    {
        int* distKey;
        float** params; 
    };
-
 
 //////////////////////////// Function prototypes  /////////////////////////////
 bool readFromFile(const char*, double*, int );
@@ -54,6 +52,8 @@ int main( int argc, char const *argv[])
    int r200n = 200;
    int r20Size; 
    int r200Size;
+   int d = 6;
+
    //ifstream srcFile;
    double A0[3*3] = { 1.0, 2.0, 3.0, 2.0, 5.0, 5.0, 3.0, 5.0, 12.0 };
    double AC[6] = {1.0, 2.0, 3.0, 5.0, 5.0, 12.0};
@@ -76,8 +76,26 @@ int main( int argc, char const *argv[])
 
    //initialize distribution struct for inverse prob
    distStruct dists;
-   dists.distKey = new int[ 6 ];
+   //initialize array for distributions
+   cudaMallocManaged( &(dists.distKey), 6*sizeof(int) );
+   
+   //initialize array of pointers for parameters.
+   cudaMallocManaged( &(dists.params), 6*sizeof(float*) );
    dists.params = new float*[ 6 ];
+
+   //read in distributions file
+   if( readDistFile( distFile, &dists, 6) ){
+    cout << endl << "READ DIST FILE SUCCESS!";
+   }
+
+   /*ifstream src;
+   char buffer[20];
+   src.open(distFile, ifstream::in );
+   for(int i = 0; i = 5; i++){
+      src >> buffer;
+      cout << buffer << ' ';
+   }*/
+
 
 
    //cuSolver 
@@ -93,7 +111,7 @@ int main( int argc, char const *argv[])
     cusolverGetProperty(MAJOR_VERSION, &major);
     cusolverGetProperty(MINOR_VERSION, &minor);
     cusolverGetProperty(PATCH_LEVEL, &patch);
-    printf("CUSOLVER Version (Major,Minor,PatchLevel): %d.%d.%d\n", major,minor,patch);
+    printf("\n CUSOLVER Version (Major,Minor,PatchLevel): %d.%d.%d\n", major,minor,patch);
 
    //allocated unified memory for storage of input covar matrix. 
    cudaMallocManaged(&r20Arr, r20Size*sizeof(double));
@@ -332,7 +350,7 @@ cout << endl;
 int ffff  = 1;
 dim3 grid(1);
 dim3 block(6);
-//normCDF<<<grid,block>>>(dtestArr, 6);
+
 cudaDeviceSynchronize();
 testFunc<<<grid,block>>>( dtestArr, 6 );
 cudaDeviceSynchronize();
@@ -353,6 +371,14 @@ cout << endl;
    cudaFree(M2);
    cudaFree(sim_r20);
    cudaFree(sim_r200);
+
+   cudaFree(dists.distKey);
+   
+   for( int i = 0; i < d; i++ ){
+    cudaFree( dists.params[i] );
+   }
+
+   cudaFree( dists.params );
 }
 
 
@@ -382,32 +408,122 @@ bool readDistFile(const char* fileName, distStruct* dists, int numDists ){
    ifstream source;
    char distName[20];
    source.open( fileName, fstream::in );
-
+   float numBuffer;
    if( source ){
+      //loop over all distributions 
       for( int i = 0; i < numDists; i++ ){ 
          source >> distName;
-         
+         cout << "NAME OF DIST: ";
+         cout << endl << distName << endl;
+         //test for each distribution supported, 14 total, 
+         //sets params accordingly
          if( strcmp( "beta", distName) == 0 ){
             dists->distKey[i] = 0;
-            dists->params[i] = new float[2];
+            cudaMallocManaged( &( dists->params[i] ), 2*sizeof(float) );
             source >> dists->params[i][0];
             source >> dists->params[i][1];
          }
 
-         else if( strcmp( "binomial", distName) == 0 ){
+         /*else if( strcmp( "binomial", distName) == 0 ){
             dists->distKey[i] = 1;
+            dists->params[i] = new float[2];
+            source >> dists->params[i][0];
+            source >> dists->params[i][1];
+         }*/
+
+         else if( strcmp( "cauchy", distName ) == 0 ){
+            dists->distKey[i] = 2;
+            cudaMallocManaged( &( dists->params[i] ), 2*sizeof(float) );
+            source >> dists->params[i][0];
+            source >> dists->params[i][1];
          }
 
-      }
+         else if( strcmp( "chi-squared", distName ) == 0 ){
+            dists->distKey[i] = 3;
+            cudaMallocManaged( &( dists->params[i] ), 1*sizeof(float) );
+            source >> dists->params[i][0];
+         }
 
+         else if( strcmp( "exponential", distName ) == 0 ){
+            dists->distKey[i] = 4;
+            cudaMallocManaged( &( dists->params[i] ), 1*sizeof(float) );
+            source >> dists->params[i][0];
+         }
+
+        else if( strcmp( "f", distName ) == 0 ){
+            dists->distKey[i] = 5;
+            cudaMallocManaged( &( dists->params[i] ), 2*sizeof(float) );
+            source >> dists->params[i][0];
+            source >> dists->params[i][1];
+         } 
+
+        else if( strcmp( "gamma", distName ) == 0 ){
+            dists->distKey[i] = 6;
+            cudaMallocManaged( &( dists->params[i] ), 2*sizeof(float) );
+            source >> dists->params[i][0];
+            source >> dists->params[i][1];
+         } 
+
+        else if( strcmp( "normal", distName ) == 0 ){
+            dists->distKey[i] = 7;
+            cudaMallocManaged( &( dists->params[i] ), 2*sizeof(float) );
+            source >> dists->params[i][0] >> dists->params[i][1];
+            //source >> dists->params[i][1];
+         } 
+
+        else if( strcmp( "lognormal", distName ) == 0 ){
+            dists->distKey[i] = 8;
+            cudaMallocManaged( &( dists->params[i] ), 2*sizeof(float) );
+            source >> dists->params[i][0];
+            source >> dists->params[i][1];
+         }
+
+        else if( strcmp( "logistic", distName ) == 0 ){
+            dists->distKey[i] = 9;
+            cudaMallocManaged( &( dists->params[i] ), 2*sizeof(float) );
+            source >> dists->params[i][0];
+            source >> dists->params[i][1];
+         }
+
+        else if( strcmp( "poisson", distName ) == 0 ){
+            dists->distKey[i] = 10;
+            cudaMallocManaged( &( dists->params[i] ), 1*sizeof(float) );
+            source >> dists->params[i][0];
+         }
+
+        else if( strcmp( "t", distName ) == 0 ){
+            dists->distKey[i] = 11;
+            cudaMallocManaged( &( dists->params[i] ), 1*sizeof(float) );
+            source >> dists->params[i][0];
+         }
+
+        else if( strcmp( "uniform", distName ) == 0 ){
+            dists->distKey[i] = 12;
+            cudaMallocManaged( &( dists->params[i] ), 2*sizeof(float) );
+            source >> dists->params[i][0];
+            source >> dists->params[i][1];
+         }
+
+        else if( strcmp( "weibull", distName ) == 0 ){
+            dists->distKey[i] = 13;
+            cudaMallocManaged( &( dists->params[i] ), 2*sizeof(float) );
+            source >> dists->params[i][0];
+            source >> dists->params[i][1];
+         } 
+
+        else{
+          cout << endl << "Error reading in paramters, check spelling.";
+          return false;
+        }               
+      }
+      source.close();
       return true;  
    }
 
    else{
+      cout << endl << "Error opening distributions file";
       source.close();
       return false;
    }
-
-
 }
 

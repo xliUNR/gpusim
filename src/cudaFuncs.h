@@ -14,8 +14,10 @@ void normGen( double*, size_t, double, double, int );
 
 void matMult( double*, double*, double*, int );
 
-__global__ void normCDF( double*, int );
-
 __global__ void testFunc( double*, int );
+
+__global__ void invTransform( double* , int* , float** , int , int );
+
+__device__ double invTransformHelper( double, int, float* );
 
 #endif

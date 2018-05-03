@@ -9,6 +9,8 @@
 #include "math.h"
 #include "stats.hpp"
 
+
+
 //This function does the cholesky decomposition
 /* 
   input parameters: inMat: input matrix
@@ -142,24 +144,6 @@ void matMult( double* matA, double* matB, double* outMat, int dim ){
   cublasDestroy( myHandle );
 }
 
-//This device function calculates the normal cdf of the input
-// calls normcdf from CUDA math API
-__global__ void normCDF( double* inMat, int n ){
-  //initialzie variables for block id and thread id
-    //int bidx, tid;  
-    //bidx = blockIdx.x;
-    //tid = threadIdx.x;
-
-    //grid stride loop
-    for( int i = blockIdx.x * blockDim.x + threadIdx.x;  i < n; i+= blockDim.x * gridDim.x ){
-      //printf("HELLO FROM INVCDF loop! \n");
-       
-       inMat[i] = normcdf( inMat[i] ); 
-       printf("%f ", inMat[i] );
-          
-    }
-
-}
 
 //function for testing calling stat library from kernel
 __global__ void testFunc( double* inMat, int cols ){
@@ -175,4 +159,92 @@ __global__ void testFunc( double* inMat, int cols ){
     printf("%f ", inMat[i] );
   }
   
+}
+
+//function for inverse transform
+__global__ void invTransform( double* simData, int* distArrPtr, 
+                                              float** paramArr, int d, int n ){
+  //declare variables
+  int tid = threadIdx.x;
+  int bid = blockIdx.x;
+
+  //stride loop over blocks
+  for( int i = bid; bid < n; bid += gridDim.x ){
+     //stride loop for threads
+     for(int j = tid; tid < d; tid+= blockDim.x ){
+        //first find cdf for normal dist
+        simData[ i*d + tid ] = normcdf( simData[ i*d + tid ] );
+        //Then do the inverse transform to specified marginal
+        simData[i*d + tid ] = 
+        invTransformHelper( simData[ i*d + tid ], distArrPtr[j], paramArr[j] );
+     }
+
+     //reset tid for next iteration of blocks
+     tid = threadIdx.x;
+  }
+}
+
+//helper function that calls stats package functions and returns calc'd value
+__device__ double invTransformHelper( double val, int key, float* paramsArr ){
+  double returnVal;
+
+  switch( key ){
+    case 0:
+      returnVal = stats::qbeta( val, paramsArr[0], paramsArr[1] );
+      break; 
+
+    /*case 1:
+      returnVal = stats::qbinom( val, (uint_t)paramsArr[0], paramsArr[1] );
+      break;*/
+
+    case 2:
+      returnVal = stats::qcauchy( val, paramsArr[0], paramsArr[1] );
+      break;  
+    
+    case 3:
+      returnVal = stats::qchisq( val, paramsArr[0] );
+      break;
+
+    case 4:
+      returnVal = stats::qexp( val, paramsArr[0] );
+      break;
+      
+    case 5:
+      returnVal = stats::qf( val, paramsArr[0], paramsArr[1] );
+      break;
+      
+    case 6:
+      returnVal = stats::qgamma( val, paramsArr[0], paramsArr[1] );
+      break;
+      
+    case 7:
+      returnVal = stats::qnorm( val, paramsArr[0], paramsArr[1] );
+      break;
+      
+    case 8:
+      returnVal = stats::qlnorm( val, paramsArr[0], paramsArr[1] );
+      break;
+      
+    case 9:
+      returnVal = stats::qlogis( val, paramsArr[0], paramsArr[1] );
+      break;
+      
+    case 10:
+      returnVal = stats::qpois( val, paramsArr[0] );
+      break;
+      
+    case 11:
+      returnVal = stats::qt( val, paramsArr[0] );
+      break;
+      
+    case 12:
+      returnVal = stats::qunif( val, paramsArr[0], paramsArr[1] );
+      break; 
+
+    case 13:
+      returnVal = stats::qweibull( val, paramsArr[0], paramsArr[1] );
+      break;                      
+  }
+
+  return returnVal;
 }
