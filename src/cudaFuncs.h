@@ -12,7 +12,7 @@ void chol(double* , int , cublasFillMode_t );
 
 void normGen( double*, size_t, double, double, int );
 
-void matMult( double*, double*, double*, int );
+void matMult( double*, double*, double*, int, int, int );
 
 __global__ void testFunc( double*, int );
 

@@ -46,12 +46,16 @@ int main( int argc, char const *argv[])
    double* r20Arr;
    double* r20ArrNF; 
    double* r200Arr;
-   double* r200ArrNF;
+   double* r20501Arr;
 
    int r20n = 20;
    int r200n = 200;
+   int r20501n = 20501;
+   int n = 1093;
    int r20Size; 
    int r200Size;
+   int r20501Size;
+   int sim20501Size = n * r20501n;
    int d = 6;
 
    //ifstream srcFile;
@@ -66,14 +70,16 @@ int main( int argc, char const *argv[])
    double* dAC;
    double* sim_r20;
    double* sim_r200;
+   double* sim_r20501;
    //file names
    char r20file[60] = "../test_corr_matrix_d=20.txt";
    char r200file[60] = "../test_corr_matrix_d=200.txt";
+   char r20501file[60] = "../test_corr_matrix_d=20501.txt";
    char distFile[60] = "../distributions.txt";
 
    r20Size = r20n*r20n;
    r200Size = r200n*r200n;
-
+   r20501Size = r20501n * r20501n;
    //initialize distribution struct for inverse prob
    distStruct dists;
    //initialize array for distributions
@@ -117,10 +123,11 @@ int main( int argc, char const *argv[])
    cudaMallocManaged(&r20Arr, r20Size*sizeof(double));
    //cudaMallocManaged(&r20ArrNF, r20Size*sizeof(double));
    cudaMallocManaged(&r200Arr, r200Size*sizeof(double));
-   //cudaMallocManaged(&r200ArrNF, r200Size*sizeof(double));
+   cudaMallocManaged(&r20501Arr, r20501Size*sizeof(double));
 
    cudaMallocManaged(&sim_r20, r20Size*sizeof(double));
    cudaMallocManaged(&sim_r200, r200Size*sizeof(double));
+   cudaMallocManaged(&sim_r20501, sim20501Size*sizeof(double));
 
    //allocate device memory for simple testing
    cudaMallocManaged( &dA0, 9*sizeof(double) );
@@ -134,6 +141,8 @@ int main( int argc, char const *argv[])
    cudaMemcpy( dAC, AC, 6*sizeof(double), cudaMemcpyHostToDevice );
    cudaMemcpy( dtestArr, testArr, 6*sizeof(double), cudaMemcpyHostToDevice );
 
+
+
    //cudaMallocManaged(&r200Arr, r200Size*sizeof(float));
      
  //start timing
@@ -145,27 +154,27 @@ int main( int argc, char const *argv[])
    cudaEventRecord( readStart, 0); 
 
  //call function to read in from file
- if( readFromFile( r20file, r20Arr, r20Size) ){
+ if( readFromFile( r20501file, r20501Arr, r20501Size) ){
    cout << endl << "FILE OPEN SUCCESS!";
  }  
  else{
    cout << endl << "ERROR FILE OPENING";
  }
- /*
+ 
  //stop timing
  cudaEventRecord( readEnd, 0 );
  cudaEventSynchronize( readEnd );
  float readTime;
  cudaEventElapsedTime( &readTime, readStart, readEnd );
  //print timing results
- cout << endl << "Reading in r20: " << readTime << " ms." << endl;
-*/
+ cout << endl << "Reading in r20501: " << readTime << " ms." << endl;
+
   /*//Timing for file read r200
    cudaEventCreate( &readStart );
    cudaEventCreate(  &readEnd );
    cudaEventRecord( readStart, 0); 
 */
- //call function to read in from file
+ /*//call function to read in from file
  if( readFromFile( r200file, r200Arr, r200Size) ){
    cout << endl << "FILE OPEN SUCCESS!";
  }  
@@ -178,9 +187,9 @@ int main( int argc, char const *argv[])
  cudaEventSynchronize( readEnd );
  float readTime;
  cudaEventElapsedTime( &readTime, readStart, readEnd );
- 
+ */
  //print timing results
- cout << endl << "Reading in r200: " << readTime << " ms." << endl;
+ //cout << endl << "Reading in r200: " << readTime << " ms." << endl;
  
 /* //test input read by printing results
   printf("\n INITIAL MATRIX\n");
@@ -202,18 +211,17 @@ cudaEventCreate( &cholEnd );
 cudaEventRecord( cholStart, 0 );
 
 //call function to perform cholesky
-//chol( r200Arr, r200n, CUBLAS_FILL_MODE_UPPER );   
+chol( r20501Arr, r20501n, CUBLAS_FILL_MODE_UPPER );   
 //synchronize threads
 cudaDeviceSynchronize();
-chol(dAR, 3, CUBLAS_FILL_MODE_LOWER );
-cudaDeviceSynchronize();
-chol(dAC, 3, CUBLAS_FILL_MODE_LOWER );
+//chol(dAR, 3, CUBLAS_FILL_MODE_LOWER );
+//chol(dAC, 3, CUBLAS_FILL_MODE_LOWER );
 //End timing
 cudaEventRecord( cholEnd, 0);
 cudaEventSynchronize( cholEnd );
 float cholTime;
 cudaEventElapsedTime( &cholTime, cholStart, cholEnd );
-cout << endl << "Cholesky r20 Took: " << cholTime << " ms." << endl;
+cout << endl << "Cholesky r20501 Took: " << cholTime << " ms." << endl;
 
 
 //Timing for cholesky r200
@@ -253,7 +261,7 @@ cout << endl << "Cholesky r200 Took: " << cholTime1 << " ms." << endl;
       printf("\n");
    }*/
 ///////// generate random variable //////////////////////////////
-size_t n = 10;
+//size_t n = 10;
 double * randMat;
 int time1 = time(NULL);
 cudaMallocManaged( &randMat, 10*sizeof(double) );
@@ -264,7 +272,7 @@ cudaEventCreate( &randStart );
 cudaEventCreate( &randEnd );
 cudaEventRecord( randStart, 0 );
 
-normGen( sim_r200, r200Size, 0.0,1.0, time1 );
+normGen( sim_r20501, sim20501Size, 0.0,1.0, time1 );
 
 cudaEventRecord( randEnd, 0);
 cudaEventSynchronize( randEnd );
@@ -297,36 +305,36 @@ cudaEventCreate( &multEnd );
 cudaEventRecord( multStart, 0 );*/
 double* M1;
 double* M2;
-
+double* M3;
 //allocate memory for matrix testing
-cudaMallocManaged( &M1, 4*sizeof(double) );
-cudaMallocManaged( &M2, 4*sizeof(double) );
+cudaMallocManaged( &M1, 6*sizeof(double) );
+cudaMallocManaged( &M2, 3*sizeof(double) );
+cudaMallocManaged( &M3, 2*sizeof(double) );
 
-//fill matrices with values
-for(int i = 0; i < 4; i++ ){
-  M1[i] = 2.0;
-  M2[i] = 2.0;
+for(int i = 0; i < 6; i ++){
+  M1[i] = i;
+}
+for(int i = 0; i < 3; i++ ){
+  M2[i] = i;
 }
 
-matMult(M1, M2, M1, 2);
+//parameters are: cols of M2, rows of M1, row of M2
+matMult(M1, M2, M3, 1, 2, 3);
 
-//print results
-cout << "MATRIX MULT RESULTS" << endl;
+/*//print results
+cout << endl << "MATRIX MULT RESULTS" << endl;
 for(int i = 0; i < 2; i++ ){
-  for(int j = 0; j < 2; j++ ){
-    cout << M1[i*2+j];
-  }
-  cout << endl;
+  cout << endl << M3[i];
 }
+cout << endl;*/
 
  //multiplication of cholesky w/ random matrix to get correlated random matrix
  cudaEvent_t multStart, multEnd;
  cudaEventCreate( &multStart );
  cudaEventCreate( &multEnd );
  cudaEventRecord( multStart, 0 );
- 
- matMult(r200Arr, sim_r200, sim_r200, r200n ); 
-
+  
+ matMult( sim_r20501, r20501Arr, sim_r20501, r20501n, n, r20501n );
  cudaEventRecord( multEnd, 0);
  cudaEventSynchronize( multEnd );
  float multTime;
@@ -340,7 +348,7 @@ for(int i = 0; i < 2; i++ ){
 */
 
 //testing to see if library can be called from kernel
-cout << "TESTING KERNEL " << endl;
+/*cout << "TESTING KERNEL " << endl;
 cout << "B4 ARRAY : ";
 for(int i = 0; i < 6; i++ ){
   cout << dtestArr[i] << ' ';
@@ -359,19 +367,20 @@ for(int i = 0; i < 6; i++){
   cout << dtestArr[i] << ' ';
 }
 cout << endl;
- 
+ */
    //free memory
    cudaFree(r20Arr);
    cudaFree(r200Arr);
-   //cudaFree(r20work);
-   //cudaFree(r200);
+   cudaFree(r20501Arr);
+   
    cudaFree(dA0);
    cudaFree(randMat); 
    cudaFree(M1);
    cudaFree(M2);
+   cudaFree(M3);
    cudaFree(sim_r20);
    cudaFree(sim_r200);
-
+   cudaFree(sim_r20501);
    cudaFree(dists.distKey);
    
    for( int i = 0; i < d; i++ ){

@@ -21,7 +21,7 @@ void chol(double* inMat, int dim, cublasFillMode_t uplo ){
    //variables for cuSolver cholesky 
    cusolverDnHandle_t csrHandle = NULL;
    cusolverStatus_t status;
-   bool TESTFLAG = true;
+   bool TESTFLAG = false;
    //variables for workspace
    int workSize = 0;
    double* workPtr;
@@ -119,9 +119,12 @@ void normGen( double* outputPtr, size_t n, double mean, double stddev, int seed 
    assert( status == CURAND_STATUS_SUCCESS && "destroyer" );
 }
 
-//square matrix mult
+//matrix mult
 //C = alpha*op(A)op(B) + beta*C
-void matMult( double* matA, double* matB, double* outMat, int dim ){
+//m is rows of matrix A and outMat
+//n is col of matrix B and outMat
+//k is col of A and rows of B
+void matMult( double* matA, double* matB, double* outMat, int m, int n, int k ){
   //declare variables
   cublasHandle_t myHandle;
   cublasStatus_t status;
@@ -135,8 +138,8 @@ void matMult( double* matA, double* matB, double* outMat, int dim ){
   status = cublasCreate( &myHandle );
   assert( status == CUBLAS_STATUS_SUCCESS );
 
-  status = cublasDgemm( myHandle, transa, transb, dim, dim, dim, &one, matB,
-                                            dim, matA, dim, &zero, outMat, dim );
+  status = cublasDgemm( myHandle, transa, transb, m, n, k, &one, matB,
+                                            m, matA, k, &zero, outMat, m );
 
   assert( status == CUBLAS_STATUS_SUCCESS );
 
