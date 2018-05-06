@@ -42,11 +42,6 @@ bool readDistFile( const char*, distStruct*, int );
 int main( int argc, char const *argv[])
 {
  /////////////////////////////initialize variables ////////////////////////////
-   //initiliaze arrays for holding input data
-   double* r20Arr;
-   double* r20ArrNF; 
-   double* r200Arr;
-   double* r20501Arr;
    //initialize variables for matrices used to store data
    double* corrMat;
    double* simMat;
@@ -64,50 +59,16 @@ int main( int argc, char const *argv[])
    bool USER_INPUT_REPEAT = true;
    bool USER_RESPONSE_REPEAT = true;
 
-   int r20n = 20;
-   int r200n = 200;
-   int r20501n = 20501;
-  
-   int r20Size; 
-   int r200Size;
-   int r20501Size;
-   int sim20501Size = n * r20501n;
-   
-   
-
-   //ifstream srcFile;
-   double A0[3*3] = { 1.0, 2.0, 3.0, 2.0, 5.0, 5.0, 3.0, 5.0, 12.0 };
-   double AC[6] = {1.0, 2.0, 3.0, 5.0, 5.0, 12.0};
-   double AR[6] = {1.0, 2.0, 5.0, 3.0, 5.0, 12.0};
-   double testdata = 0.1;
-   double testArr[6] = {0.1, 0.1, 0.1, 0.1, 0.1, 0.1 };
-   double *dtestArr;
-   double* dA0;
-   double* dAR;
-   double* dAC;
-   double* sim_r20;
-   double* sim_r200;
-   double* sim_r20501;
-   //file names
-   /*char r20file[60] = "../test_corr_matrix_d=20.txt";
-   char r200file[60] = "../test_corr_matrix_d=200.txt";
-   char r20501file[60] = "../test_corr_matrix_d=20501.txt";
-   char distFile[60] = "../distributions.txt";*/
-
-
-   r20Size = r20n*r20n;
-   r200Size = r200n*r200n;
-   r20501Size = r20501n * r20501n;
    //initialize distribution struct for inverse prob
    distStruct dists;
    
  //////////////////////////////////////////////////////////////////////////////
 
  // Ask for user input if no command line arguments passed
- while( PROG_REPEAT ){
-   
+ do{
+    //first ask user for info if not given as CMD line args
     if( argc < 2 ){
-     while( USER_INPUT_REPEAT ){
+     do{
         cout << endl << "Enter in correlation matrix file path: ";
         cin >> corrFileName;
 
@@ -115,7 +76,7 @@ int main( int argc, char const *argv[])
         cin >> distFileName;
 
         cout << endl << "Enter in dimension of correlation matrix: ";
-        cin >   
+        cin >> d;   
         cout << endl << "Enter in Number of simulation replicates: ";
         cin >> n;
         cout << endl << "Please verify following information is correct.";
@@ -124,15 +85,14 @@ int main( int argc, char const *argv[])
         cout << endl << "Dimension of correlation matrix: " << d;
         cout << endl << "Number of Simulation replicates: " << n;
 
-        USER_RESPONSE = true;
         //ask user if all information is correct
-        while( USER_RESPONSE ){
+           do{
            cout << endl << endl <<" Would you like to re-enter info? (y/n): ";
            cin << userResponse; 
 
            if( userResponse == 'y' ){
               USER_INPUT_REPEAT = true;
-              USER_RESPONSE = false;
+              USER_RESPONSE_REPEAT = false;
            }
 
            else if( userResponse == 'n' ){
@@ -140,12 +100,15 @@ int main( int argc, char const *argv[])
              USER_RESPONSE_REPEAT = false;  
            }
            else{
-             cout << endl << 
+              cout << endl << 
                  "Could not understand response, please respond with y or n.";
+              USER_RESPONSE = true;
            }
-        }
-      }
+        }while( USER_RESPONSE_REPEAT );
+
+      }while( USER_INPUT_REPEAT );
     }
+
     //otherwise everything is read as command line args
     else{
     d = argv[3];
@@ -154,20 +117,104 @@ int main( int argc, char const *argv[])
     strcpy( corrFileName, argv[1] );
     strcpy( distFileName, argv[2] );
     }
-    
+   //calculate sizes
+   corrSize = d*d;
+   simSize = d*n;
+
    //allocate dynamic memory 
-   cudaMallocManaged( &corrMatrix, d*d*sizeof(double) );
-   cudaMallocManaged( &simMatrix, n*d*sizeof(double) ); 
+   cudaMallocManaged( &corrMatrix, corrSize*sizeof(double) );
+   cudaMallocManaged( &simMatrix, simSize*sizeof(double) ); 
    cudaMallocManaged( &( dists.distKey ), d*sizeof(int) );
    cudaMallocManaged( &( dists.params ), d*sizeof(float*) );
 
    //attempt to read in from files
-   if( readFromFile( corrFileName, corrMat, d*d) && readDistFile( dist)){
+   if( readFromFile( corrFileName, corrMat, d*d) && 
+                                        readDistFile( distFileName, d) ){
+      cout << endl << "File read success!";
+
+
+      //Cholesky decomposition 
+      cudaEvent_t cholStart, cholEnd;
+      cudaEventCreate( &cholStart ); 
+      cudaEventCreate( &cholEnd );
+      cudaEventRecord( cholStart, 0 );
+
+      chol( corrMat, d, CUBLAS_FILL_MODE_UPPER );
+      cudaDeviceSynchronize();
+
+      cudaEventRecord( cholEnd, 0);
+      cudaEventSynchronize( cholEnd );
+      float cholTime;
+      cudaEventElapsedTime( &cholTime, cholStart, cholEnd );
+
+
+      //random i.i.d generation
+      cudaEvent_t randStart, randEnd;
+      cudaEventCreate( &randStart ); 
+      cudaEventCreate( &randEnd );
+      cudaEventRecord( randStart, 0 );
+
+      int seedTime = time(NULL);
+      normGen( simMat, simSize, 0.0, 1.0, seedTime );
+      cudaDeviceSynchronize();
+
+      cudaEventRecord( randEnd, 0);
+      cudaEventSynchronize( randEnd );
+      float randTime;
+      cudaEventElapsedTime( &randTime, randStart, randEnd );
+
+
+      //matrix multiplication
+      cudaEvent_t multStart, multEnd;
+      cudaEventCreate( &multStart );
+      cudaEventCreate( &multEnd );
+      cudaEventRecord( multStart, 0 ); 
+
+      matMult( simMat, corrMat, simMat, d, n, d );
+      cudaDeviceSynchronize();
+
+      cudaEventRecord( multEnd, 0);
+      cudaEventSynchronize( multEnd );
+      float multTime;
+      cudaEventElapsedTime( &multTime, multStart, multEnd );
+
+
+      //inverse transform
+      cudaEvent_t invStart, invEnd;
+      cudaEventCreate( &invStart );
+      cudaEventCreate( &invEnd );
+      cudaEventRecord( invStart, 0 );
+
+      invTransform( simMat, dists->distKey, dists->params, d, n );
+
+      cudaEventRecord( invEnd, 0 );
+      cudaEventSynchronize( invEnd );
+      float invTime;
+      cudaEventElapsedTime( &invTime, invStart, invEnd );
+
+
+      //print out timings
+      cout << endl << "Timing information: ";
+      cout << endl << "Cholesky Decomp: " << cholTime;
+      cout << endl << "Random i.i.d generation: " << randTime;
+      cout << endl << "Matrix multiplication: " << multTime;
+      cout << endl << "inverse transform: " << invTime;
+
+      //ask user if they want to run program again
 
    } 
+   else{
+      cout << endl << "ERROR: One of files could not be read.";
+      if( argc < 2 ){
+         PROG_REPEAT = true;  
+      }
+      else{
+         return 0;
+      } 
+   }
 
 
- }
+ }while( PROG_REPEAT );
  
 
 
