@@ -41,39 +41,22 @@ bool readDistFile( const char*, distStruct*, int );
 /////////////////////////////////    Main   ///////////////////////////////////
 int main( int argc, char const *argv[])
 {
- /////////////////////////////initialize variables ////////////////////////////
+ //initialize variables
    //initiliaze arrays for holding input data
    double* r20Arr;
    double* r20ArrNF; 
    double* r200Arr;
    double* r20501Arr;
-   //initialize variables for matrices used to store data
-   double* corrMat;
-   double* simMat;
-   int d, n; //d is correlation matrix dim, n is number of sim replicates
-   int corrSize, simSize;
-   diststruct dists;
-
-   //declare strings
-   char corrFileName[60];
-   char distFileName[60];
-   char userResponse[10];
-
-   //declare and initialize booleans
-   bool PROG_REPEAT = true;
-   bool USER_INPUT_REPEAT = true;
-   bool USER_RESPONSE_REPEAT = true;
 
    int r20n = 20;
    int r200n = 200;
    int r20501n = 20501;
-  
+   int n = 1093;
    int r20Size; 
    int r200Size;
    int r20501Size;
    int sim20501Size = n * r20501n;
-   
-   
+   int d = 6;
 
    //ifstream srcFile;
    double A0[3*3] = { 1.0, 2.0, 3.0, 2.0, 5.0, 5.0, 3.0, 5.0, 12.0 };
@@ -89,92 +72,16 @@ int main( int argc, char const *argv[])
    double* sim_r200;
    double* sim_r20501;
    //file names
-   /*char r20file[60] = "../test_corr_matrix_d=20.txt";
+   char r20file[60] = "../test_corr_matrix_d=20.txt";
    char r200file[60] = "../test_corr_matrix_d=200.txt";
    char r20501file[60] = "../test_corr_matrix_d=20501.txt";
-   char distFile[60] = "../distributions.txt";*/
-
+   char distFile[60] = "../distributions.txt";
 
    r20Size = r20n*r20n;
    r200Size = r200n*r200n;
    r20501Size = r20501n * r20501n;
    //initialize distribution struct for inverse prob
    distStruct dists;
-   
- //////////////////////////////////////////////////////////////////////////////
-
- // Ask for user input if no command line arguments passed
- while( PROG_REPEAT ){
-   
-    if( argc < 2 ){
-     while( USER_INPUT_REPEAT ){
-        cout << endl << "Enter in correlation matrix file path: ";
-        cin >> corrFileName;
-
-        cout << endl << "Enter in distributions file path: ";
-        cin >> distFileName;
-
-        cout << endl << "Enter in dimension of correlation matrix: ";
-        cin >   
-        cout << endl << "Enter in Number of simulation replicates: ";
-        cin >> n;
-        cout << endl << "Please verify following information is correct.";
-        cout << endl << "Correlation matrix file path: " << corrFileName;
-        cout << endl << "distributions file path: " << distFileName;
-        cout << endl << "Dimension of correlation matrix: " << d;
-        cout << endl << "Number of Simulation replicates: " << n;
-
-        USER_RESPONSE = true;
-        //ask user if all information is correct
-        while( USER_RESPONSE ){
-           cout << endl << endl <<" Would you like to re-enter info? (y/n): ";
-           cin << userResponse; 
-
-           if( userResponse == 'y' ){
-              USER_INPUT_REPEAT = true;
-              USER_RESPONSE = false;
-           }
-
-           else if( userResponse == 'n' ){
-             USER_INPUT_REPEAT = false;
-             USER_RESPONSE_REPEAT = false;  
-           }
-           else{
-             cout << endl << 
-                 "Could not understand response, please respond with y or n.";
-           }
-        }
-      }
-    }
-    //otherwise everything is read as command line args
-    else{
-    d = argv[3];
-    n = argv[4]; 
-    copy arguments into strings
-    strcpy( corrFileName, argv[1] );
-    strcpy( distFileName, argv[2] );
-    }
-    
-   //allocate dynamic memory 
-   cudaMallocManaged( &corrMatrix, d*d*sizeof(double) );
-   cudaMallocManaged( &simMatrix, n*d*sizeof(double) ); 
-   cudaMallocManaged( &( dists.distKey ), d*sizeof(int) );
-   cudaMallocManaged( &( dists.params ), d*sizeof(float*) );
-
-   //attempt to read in from files
-   if( readFromFile( corrFileName, corrMat, d*d) && readDistFile( dist)){
-
-   } 
-
-
- }
- 
-
-
-
-
-
-
    //initialize array for distributions
    cudaMallocManaged( &(dists.distKey), 6*sizeof(int) );
    
@@ -187,14 +94,30 @@ int main( int argc, char const *argv[])
     cout << endl << "READ DIST FILE SUCCESS!";
    }
 
+   /*ifstream src;
+   char buffer[20];
+   src.open(distFile, ifstream::in );
+   for(int i = 0; i = 5; i++){
+      src >> buffer;
+      cout << buffer << ' ';
+   }*/
 
 
-   //print cusolver version
+
+   //cuSolver 
+   //cuSolverStatus_t solverStatus;
+   
+   //cudaStream_t stream = NULL;   
+   
+   //set stream
+   //cusolverDnSetStream(csrHandle, stream);
+
+   /*//print cusolver version
    int major=-1,minor=-1,patch=-1;
     cusolverGetProperty(MAJOR_VERSION, &major);
     cusolverGetProperty(MINOR_VERSION, &minor);
     cusolverGetProperty(PATCH_LEVEL, &patch);
-    printf("\n CUSOLVER Version (Major,Minor,PatchLevel): %d.%d.%d\n", major,minor,patch);
+    printf("\n CUSOLVER Version (Major,Minor,PatchLevel): %d.%d.%d\n", major,minor,patch);*/
 
    //allocated unified memory for storage of input covar matrix. 
    cudaMallocManaged(&r20Arr, r20Size*sizeof(double));
@@ -325,7 +248,7 @@ cout << endl << "Cholesky r200 Took: " << cholTime1 << " ms." << endl;
         for(int i = 0; i < 200 * 200; i++)
            {
              fscanf(fp, "%f", &r200[i]);
-	   }
+     }
       }*/
 
    /*//test input read by printing results
@@ -612,4 +535,3 @@ bool readDistFile(const char* fileName, distStruct* dists, int numDists ){
       return false;
    }
 }
-
