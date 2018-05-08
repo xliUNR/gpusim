@@ -1,0 +1,13 @@
+beta 2 5
+cauchy 0 0.5
+chi-squared 4
+exponential 1.5
+f 2 1
+gamma 3.0 2.0
+normal 0.0 1
+lognormal 0.0 0.125
+logistic 9 3
+poisson 1
+t 2
+uniform 0 5.5
+weibull 1 5

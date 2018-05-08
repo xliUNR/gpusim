@@ -51,11 +51,12 @@ int main( int argc, char const *argv[])
    int r20n = 20;
    int r200n = 200;
    int r20501n = 20501;
-   int n = 1093;
+   int n = 1094;
    int r20Size; 
    int r200Size;
    int r20501Size;
-   int sim20501Size = n * r20501n;
+   int sim20501Size =  n * r20501n;
+   int sim200Size = 100000 * 300;
    int d = 6;
 
    //ifstream srcFile;
@@ -63,7 +64,7 @@ int main( int argc, char const *argv[])
    double AC[6] = {1.0, 2.0, 3.0, 5.0, 5.0, 12.0};
    double AR[6] = {1.0, 2.0, 5.0, 3.0, 5.0, 12.0};
    double testdata = 0.1;
-   double testArr[6] = {0.1, 0.1, 0.1, 0.1, 0.1, 0.1 };
+   double testArr[13] = {0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1};
    double *dtestArr;
    double* dA0;
    double* dAR;
@@ -75,25 +76,29 @@ int main( int argc, char const *argv[])
    char r20file[60] = "../test_corr_matrix_d=20.txt";
    char r200file[60] = "../test_corr_matrix_d=200.txt";
    char r20501file[60] = "../test_corr_matrix_d=20501.txt";
-   char distFile[60] = "../distributions.txt";
+   char distFile[60] = "../alldistributions";
 
-   r20Size = r20n*r20n;
-   r200Size = r200n*r200n;
+   r20Size = r20n*n;
+   r200Size = r200n*n;
    r20501Size = r20501n * r20501n;
    //initialize distribution struct for inverse prob
    distStruct dists;
    //initialize array for distributions
-   cudaMallocManaged( &(dists.distKey), 6*sizeof(int) );
+   cudaMallocManaged( &(dists.distKey), 13*sizeof(int) );
    
    //initialize array of pointers for parameters.
-   cudaMallocManaged( &(dists.params), 6*sizeof(float*) );
-   dists.params = new float*[ 6 ];
+   cudaMallocManaged( &(dists.params), 13*sizeof(float*) );
+   //dists.params = new float*[ 13 ];
 
    //read in distributions file
-   if( readDistFile( distFile, &dists, 6) ){
+   if( readDistFile( distFile, &dists, 13) ){
     cout << endl << "READ DIST FILE SUCCESS!";
    }
 
+   cout << endl << "Printing out data struct: " << endl;
+   for(int i = 0; i < 13; i++ ){
+    cout << dists.distKey[i];
+   }
    /*ifstream src;
    char buffer[20];
    src.open(distFile, ifstream::in );
@@ -120,38 +125,44 @@ int main( int argc, char const *argv[])
     printf("\n CUSOLVER Version (Major,Minor,PatchLevel): %d.%d.%d\n", major,minor,patch);*/
 
    //allocated unified memory for storage of input covar matrix. 
-   cudaMallocManaged(&r20Arr, r20Size*sizeof(double));
+   //cudaMallocManaged(&r20Arr, r20Size*sizeof(double));
    //cudaMallocManaged(&r20ArrNF, r20Size*sizeof(double));
-   cudaMallocManaged(&r200Arr, r200Size*sizeof(double));
-   cudaMallocManaged(&r20501Arr, r20501Size*sizeof(double));
+   //cudaMallocManaged(&r200Arr, r200n*r200n*sizeof(double));
+   //cudaMallocManaged(&r20501Arr, r20501n*r20501n*sizeof(double));
 
-   cudaMallocManaged(&sim_r20, r20Size*sizeof(double));
-   cudaMallocManaged(&sim_r200, r200Size*sizeof(double));
-   cudaMallocManaged(&sim_r20501, sim20501Size*sizeof(double));
+  // cudaMallocManaged(&sim_r20, r20Size*sizeof(double));
+   //cudaMallocManaged(&sim_r200, sim20501Size*sizeof(double));
+   //cudaMallocManaged(&sim_r20501, sim20501Size*sizeof(double));
+   cudaMallocManaged( &dtestArr, 13*sizeof(double) );
 
-   //allocate device memory for simple testing
+   /*//allocate device memory for simple testing
    cudaMallocManaged( &dA0, 9*sizeof(double) );
    cudaMallocManaged( &dAR, 6*sizeof(double) );
    cudaMallocManaged( &dAC, 6*sizeof(double) );
-   cudaMallocManaged( &dtestArr, 6*sizeof(double) );
+   
 
    //copy explicitly defined matrix into device
    cudaMemcpy( dA0, A0, 9*sizeof(double), cudaMemcpyHostToDevice );
    cudaMemcpy( dAR, AR, 6*sizeof(double), cudaMemcpyHostToDevice );
    cudaMemcpy( dAC, AC, 6*sizeof(double), cudaMemcpyHostToDevice );
-   cudaMemcpy( dtestArr, testArr, 6*sizeof(double), cudaMemcpyHostToDevice );
-
-
+   
+*/
+cudaMemcpy( dtestArr, testArr, 13*sizeof(double), cudaMemcpyHostToDevice );
+cout << endl << "printing test array: ";
+for(int i = 0; i < 13; i++){
+  cout << dtestArr[i] << ' ';
+}
 
    //cudaMallocManaged(&r200Arr, r200Size*sizeof(float));
      
  //start timing
  
-  //Timing for file read r20
+  /*//Timing for file read r20
    cudaEvent_t readStart, readEnd;
    cudaEventCreate( &readStart );
    cudaEventCreate(  &readEnd );
    cudaEventRecord( readStart, 0); 
+
 
  //call function to read in from file
  if( readFromFile( r20501file, r20501Arr, r20501Size) ){
@@ -168,12 +179,12 @@ int main( int argc, char const *argv[])
  cudaEventElapsedTime( &readTime, readStart, readEnd );
  //print timing results
  cout << endl << "Reading in r20501: " << readTime << " ms." << endl;
-
+*/
   /*//Timing for file read r200
    cudaEventCreate( &readStart );
    cudaEventCreate(  &readEnd );
    cudaEventRecord( readStart, 0); 
-*/
+  */
  /*//call function to read in from file
  if( readFromFile( r200file, r200Arr, r200Size) ){
    cout << endl << "FILE OPEN SUCCESS!";
@@ -203,7 +214,7 @@ int main( int argc, char const *argv[])
    }
 */
 
-  //printf("Dev Info: %d", *devInfo);
+/*  //printf("Dev Info: %d", *devInfo);
 //Timing for cholesky r20
 cudaEvent_t cholStart, cholEnd;
 cudaEventCreate( &cholStart ); 
@@ -228,7 +239,7 @@ cout << endl << "Cholesky r20501 Took: " << cholTime << " ms." << endl;
 //cudaEventCreate( &cholStart ); 
 //cudaEventCreate( &cholEnd );
 //cudaEventRecord( cholStart, 0 );
-
+*/
 /*//call function to perform cholesky
 chol( r200Arr, 200, CUBLAS_FILL_MODE_UPPER );   
 //synchronize threads
@@ -261,7 +272,7 @@ cout << endl << "Cholesky r200 Took: " << cholTime1 << " ms." << endl;
       printf("\n");
    }*/
 ///////// generate random variable //////////////////////////////
-//size_t n = 10;
+/*//size_t n = 10;
 double * randMat;
 int time1 = time(NULL);
 cudaMallocManaged( &randMat, 10*sizeof(double) );
@@ -271,7 +282,8 @@ cudaEvent_t randStart, randEnd;
 cudaEventCreate( &randStart ); 
 cudaEventCreate( &randEnd );
 cudaEventRecord( randStart, 0 );
-
+size_t r20501ss = 1093*20501;
+//normGen( sim_r200, sim200Size, 0.0, 1.0, time1 );
 normGen( sim_r20501, sim20501Size, 0.0,1.0, time1 );
 
 cudaEventRecord( randEnd, 0);
@@ -281,7 +293,7 @@ cudaEventElapsedTime( &randTime, randStart, randEnd );
 cout << endl << "RNG r200: " << randTime << " ms." << endl;
 
 cout <<endl << "TIME SEED: " << time1;
-/*//print results to screen
+//print results to screen
 printf("\n RANDOM MATRIX: \n");
 for(int i = 0; i < 200; i++ ){
   for(int j=0; j < 200; j++){
@@ -303,7 +315,7 @@ for(int i = 0; i < 200; i++ ){
 cudaEventCreate( &multStart );
 cudaEventCreate( &multEnd );
 cudaEventRecord( multStart, 0 );*/
-double* M1;
+/*double* M1;
 double* M2;
 double* M3;
 //allocate memory for matrix testing
@@ -317,9 +329,9 @@ for(int i = 0; i < 6; i ++){
 for(int i = 0; i < 3; i++ ){
   M2[i] = i;
 }
-
+*/
 //parameters are: cols of M2, rows of M1, row of M2
-matMult(M1, M2, M3, 1, 2, 3);
+//matMult(M1, M2, M3, 1, 2, 3);
 
 /*//print results
 cout << endl << "MATRIX MULT RESULTS" << endl;
@@ -328,7 +340,7 @@ for(int i = 0; i < 2; i++ ){
 }
 cout << endl;*/
 
- //multiplication of cholesky w/ random matrix to get correlated random matrix
+ /*//multiplication of cholesky w/ random matrix to get correlated random matrix
  cudaEvent_t multStart, multEnd;
  cudaEventCreate( &multStart );
  cudaEventCreate( &multEnd );
@@ -341,12 +353,18 @@ cout << endl;*/
  cudaEventElapsedTime( &multTime, multStart, multEnd );
  cout << endl << "mult r20: " << multTime << " ms." << endl;
  
- /*//calling qnorm from stats lib works.
+ 
+ //calling qnorm from stats lib works.
  cout << "TESTING FOR STATS LIBRARY" << endl;
  cout << "b4 Value = " << testdata;
  cout << "after value = " << stats::qnorm(testdata) << endl; 
 */
 
+invTransform<<<2,3>>>(dtestArr, dists.distKey, dists.params, 13, 1);
+cout << endl << " Printing results after inverse transform";
+for(int i = 0; i < 13; i++){
+  cout << dtestArr[i] << ' ';
+}
 //testing to see if library can be called from kernel
 /*cout << "TESTING KERNEL " << endl;
 cout << "B4 ARRAY : ";
@@ -369,17 +387,18 @@ for(int i = 0; i < 6; i++){
 cout << endl;
  */
    //free memory
-   cudaFree(r20Arr);
-   cudaFree(r200Arr);
+  // cudaFree(r20Arr);
+   //cudaFree(r200Arr);
    cudaFree(r20501Arr);
-   
-   cudaFree(dA0);
-   cudaFree(randMat); 
-   cudaFree(M1);
-   cudaFree(M2);
-   cudaFree(M3);
-   cudaFree(sim_r20);
-   cudaFree(sim_r200);
+   cudaFree( dtestArr );
+
+   //cudaFree(dA0);
+   //cudaFree(randMat); 
+   //cudaFree(M1);
+   //cudaFree(M2);
+   //cudaFree(M3);
+   //cudaFree(sim_r20);
+   //cudaFree(sim_r200);
    cudaFree(sim_r20501);
    cudaFree(dists.distKey);
    
