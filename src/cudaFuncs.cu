@@ -152,13 +152,13 @@ void matMult( double* matA, double* matB, double* outMat, int m, int n, int k ){
 __global__ void testFunc( double* inMat, int cols ){
   //int bidx, tid;
   double temp;
-
+  printf(" \n cols %d", cols );
   //temp = stats::qnorm( inMat[ blockIdx.x * blockDim.x + threadIdx.x ] );
   //grid stride
   for( int i = blockIdx.x * blockDim.x + threadIdx.x; i < cols; i+= blockDim.x*gridDim.x ){
     
     inMat[i] = stats::qnorm( inMat[i] );
-    printf("%f ", inMat[i] );
+    printf("Index: %d | %f ", i, inMat[i] );
   }
   
 }
@@ -166,7 +166,9 @@ __global__ void testFunc( double* inMat, int cols ){
 //function for inverse transform
 __global__ void invTransform( double* simData, int* distArrPtr, 
                                               float** paramArr, int d, int n ){
-  printf(" blockId = %d, threadId = %d \n", blockIdx.x, threadIdx.x);
+  printf(" d ; %d \n", d);
+  printf(" n ; %d \n", n);
+  
   //Stride loop
   for(int i = blockIdx.x * blockDim.x + threadIdx.x; i < d*n; 
                                         i+= blockDim.x * gridDim.x ){
@@ -178,6 +180,7 @@ __global__ void invTransform( double* simData, int* distArrPtr,
     printf( "matrix elem: %d data: %f \n", blockIdx.x * blockDim.x + threadIdx.x, simData[i] );
   }
 }
+
 
 //helper function that calls stats package functions and returns calc'd value
 __device__ double invTransformHelper( double val, int key, float* paramsArr ){

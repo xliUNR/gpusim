@@ -359,8 +359,11 @@ cout << endl;*/
  cout << "b4 Value = " << testdata;
  cout << "after value = " << stats::qnorm(testdata) << endl; 
 */
-
-invTransform<<<2,3>>>(dtestArr, dists.distKey, dists.params, 13, 1);
+int d1 = 13;
+int n1 = 1;
+invTransform<<<2,3>>>(dtestArr, dists.distKey, dists.params, d1, n1);
+//testFunc<<<2,3>>>(dtestArr, 13 );
+cudaDeviceSynchronize();
 cout << endl << " Printing results after inverse transform";
 for(int i = 0; i < 13; i++){
   cout << dtestArr[i] << ' ';
