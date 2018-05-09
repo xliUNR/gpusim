@@ -166,18 +166,30 @@ __global__ void testFunc( double* inMat, int cols ){
 //function for inverse transform
 __global__ void invTransform( double* simData, int* distArrPtr, 
                                               float** paramArr, int d, int n ){
-  printf(" d ; %d \n", d);
-  printf(" n ; %d \n", n);
-  
-  //Stride loop
-  for(int i = blockIdx.x * blockDim.x + threadIdx.x; i < d*n; 
-                                        i+= blockDim.x * gridDim.x ){
+  //printf(" d ; %d \n", d);
+  //printf(" n ; %d \n", n);
+  int tid = threadIdx.x;
+  int bid = blockIdx.x;
+  int numba;
+  //Stride over blocks
+  for(int i = bid; bid < n; bid+=gridDim.x ){
+    //stride over threads
+    for(int j = tid; tid < d; tid+=blockDim.x ){
+      //first calculate cdf
+      simData[ i*d + tid ] = normcdf( simData[ i*d + tid ] );
+      //printf(" \n j value: %d i value: %d", tid, i );
+      //Then transform to specified marginals
+      simData[ i*d + tid ] = invTransformHelper( simData[ i*d + tid ], 
+                                          distArrPtr[ tid ], paramArr[ tid ] );
+
+    //printf( "matrix elem: %d data: %f \n", (i*d +tid), simData[ i*d + tid ] );
+    
+
+    }
+    //reset tid everytime block is strided over
+    tid = threadIdx.x;
+    //printf( "\n Value of i: %d", i );
     //first find cdf for normal dist
-    simData[ i ] = normcdf( simData[ i ] );
-    //Then do the inverse transform to specified marginal
-    simData[ i ] =
-    invTransformHelper( simData[ i ], distArrPtr[ (i/d) ], paramArr[ (i/d) ] );
-    printf( "matrix elem: %d data: %f \n", blockIdx.x * blockDim.x + threadIdx.x, simData[i] );
   }
 }
 
@@ -188,7 +200,9 @@ __device__ double invTransformHelper( double val, int key, float* paramsArr ){
   //int nTrials = 7;
   switch( key ){
     case 0:
-      returnVal = stats::qbeta( val, paramsArr[0], paramsArr[1] );
+      printf(" \n beta param val1: %f", paramsArr[0] );
+      printf(" \n beta param val2: %f", paramsArr[1] );
+      ////returnVal = stats::qbeta( val, paramsArr[0], paramsArr[1] );
       printf("hey 0 worked \n");
       break; 
 
@@ -198,62 +212,82 @@ __device__ double invTransformHelper( double val, int key, float* paramsArr ){
       break;
 
     case 2:
-      returnVal = stats::qcauchy( val, paramsArr[0], paramsArr[1] );
+      printf(" \n cauchy param val: %f", paramsArr[0] );
+      printf(" \n cauchy param val: %f", paramsArr[1] );
+      ////returnVal = stats::qcauchy( val, paramsArr[0], paramsArr[1] );
       printf("hey 2 worked \n");
       break;  
     
     case 3:
-      returnVal = stats::qchisq( val, paramsArr[0] );
+      printf(" \n chi-squared param val: %f", paramsArr[0] );
+      //returnVal = stats::qchisq( val, paramsArr[0] );
       printf("hey 3 worked \n");
       break;
 
     case 4:
-      returnVal = stats::qexp( val, paramsArr[0] );
+      printf(" \n exponential param val: %f", paramsArr[0] );
+      ////returnVal = stats::qexp( val, paramsArr[0] );
       printf("hey 4 worked \n");
       break;
       
     case 5:
-      returnVal = stats::qf( val, paramsArr[0], paramsArr[1] );
+      printf(" \n f param val1: %f", paramsArr[0] );
+      printf(" \n f param val2: %f", paramsArr[1] );
+      ////returnVal = stats::qf( val, paramsArr[0], paramsArr[1] );
       printf("hey 5 worked \n");
       break;
       
     case 6:
-      returnVal = stats::qgamma( val, paramsArr[0], paramsArr[1] );
+      printf(" \n gamma param val1: %f", paramsArr[0] );
+      printf(" \n gamma param val2: %f", paramsArr[1] );
+     //// returnVal = stats::qgamma( val, paramsArr[0], paramsArr[1] );
       printf("hey 6 worked \n");
       break;
       
     case 7:
-      returnVal = stats::qnorm( val, paramsArr[0], paramsArr[1] );
+      printf(" \n normal param val1: %f", paramsArr[0] );
+      printf(" \n normal param val2: %f", paramsArr[1] );      
+      ////returnVal = stats::qnorm( val, paramsArr[0], paramsArr[1] );
       printf("hey 7 worked \n");
       break;
       
     case 8:
-      returnVal = stats::qlnorm( val, paramsArr[0], paramsArr[1] );
+      printf(" \n log normal param val1: %f", paramsArr[0] );
+      printf(" \n log normal param val2: %f", paramsArr[1] );
+      ////returnVal = stats::qlnorm( val, paramsArr[0], paramsArr[1] );
       printf("hey 8 worked \n");
       break;
       
     case 9:
-      returnVal = stats::qlogis( val, paramsArr[0], paramsArr[1] );
+      printf(" \n logistic param val1: %f", paramsArr[0] );
+      printf(" \n logistic param val2: %f", paramsArr[1] );
+      ////returnVal = stats::qlogis( val, paramsArr[0], paramsArr[1] );
       printf("hey 9 worked \n");
       break;
       
     case 10:
-      returnVal = stats::qpois( val, paramsArr[0] );
+      printf(" \n poisson param val1: %f", paramsArr[0] );
+      ////returnVal = stats::qpois( val, paramsArr[0] );
       printf("hey 10 worked \n");
       break;
       
     case 11:
-      returnVal = stats::qt( val, paramsArr[0] );
+      printf(" \n t param val1: %f", paramsArr[0] );
+      //returnVal = stats::qt( val, paramsArr[0] );
       printf("hey 11 worked \n");
       break;
       
     case 12:
-      returnVal = stats::qunif( val, paramsArr[0], paramsArr[1] );
+      printf(" \n uniform param val1: %f", paramsArr[0] );
+      printf(" \n uniform param val2: %f", paramsArr[1] );
+      //returnVal = stats::qunif( val, paramsArr[0], paramsArr[1] );
       printf("hey 12 worked \n");
       break; 
 
     case 13:
-      returnVal = stats::qweibull( val, paramsArr[0], paramsArr[1] );
+      printf(" \n weibull param val1: %f", paramsArr[0] );
+      printf(" \n weibull param val2: %f", paramsArr[1] );
+      //returnVal = stats::qweibull( val, paramsArr[0], paramsArr[1] );
       printf("hey 13 worked \n");
       break;                      
   }
