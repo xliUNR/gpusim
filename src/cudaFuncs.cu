@@ -168,26 +168,25 @@ __global__ void invTransform( double* simData, int* distArrPtr,
                                               float** paramArr, int d, int n ){
   //printf(" d ; %d \n", d);
   //printf(" n ; %d \n", n);
-  int tid = threadIdx.x;
+  //int tid = threadIdx.x;
   int bid = blockIdx.x;
   int numba;
   //Stride over blocks
-  for(int i = bid; bid < n; bid+=gridDim.x ){
+  for(int i = blockIdx.x; i < n; i+=gridDim.x ){
     //stride over threads
-    for(int j = tid; tid < d; tid+=blockDim.x ){
+    for(int j = threadIdx.x; j < d; j+=blockDim.x ){
       //first calculate cdf
-      simData[ i*d + tid ] = normcdf( simData[ i*d + tid ] );
-      //printf(" \n j value: %d i value: %d", tid, i );
+      //simData[ i*d + j ] = normcdf( simData[ i*d + j ] );
+      printf(" \n j value: %d i value: %d Uniq Val: %d", j, i, (i*d + j) );
       //Then transform to specified marginals
-      simData[ i*d + tid ] = invTransformHelper( simData[ i*d + tid ], 
-                                          distArrPtr[ tid ], paramArr[ tid ] );
+      //simData[ i*d + tid ] = invTransformHelper( simData[ i*d + tid ], 
+       //                                   distArrPtr[ tid ], paramArr[ tid ] );
 
     //printf( "matrix elem: %d data: %f \n", (i*d +tid), simData[ i*d + tid ] );
     
 
     }
     //reset tid everytime block is strided over
-    tid = threadIdx.x;
     //printf( "\n Value of i: %d", i );
     //first find cdf for normal dist
   }

@@ -360,7 +360,8 @@ cout << endl;*/
  cout << "after value = " << stats::qnorm(testdata) << endl; 
 */
 int d1 = 13;
-int n1 = 1;
+int n1 = 5;
+
 invTransform<<<2,3>>>(dtestArr, dists.distKey, dists.params, d1, n1);
 //testFunc<<<2,3>>>(dtestArr, 13 );
 cudaDeviceSynchronize();
