@@ -32,9 +32,12 @@ struct distStruct
    };
 
 //////////////////////////// Function prototypes  /////////////////////////////
+//This function reads correlation matrix from file
 bool readFromFile(const char*, double*, int );
+//This function reads list of distributions from file
 bool readDistFile( const char*, distStruct*, int );
-
+//This function fills in lower part of matrix with zeros
+void fillZeros( double* inMat, int dim );
 
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -51,20 +54,21 @@ int main( int argc, char const *argv[])
    int r20n = 20;
    int r200n = 200;
    int r20501n = 20501;
-   int n = 1094;
+   int n = 1;
    int r20Size; 
    int r200Size;
    int r20501Size;
+   int sim20Size = n * r20n;
    int sim20501Size =  n * r20501n;
    int sim200Size = 100000 * 300;
-   int d = 6;
+   int d = 3;
 
    //ifstream srcFile;
    double A0[3*3] = { 1.0, 2.0, 3.0, 2.0, 5.0, 5.0, 3.0, 5.0, 12.0 };
    double AC[6] = {1.0, 2.0, 3.0, 5.0, 5.0, 12.0};
    double AR[6] = {1.0, 2.0, 5.0, 3.0, 5.0, 12.0};
    double testdata = 0.1;
-   double testArr[13] = {0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1};
+   double testArr[12] = {0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1 };
    double *dtestArr;
    double* dA0;
    double* dAR;
@@ -84,21 +88,34 @@ int main( int argc, char const *argv[])
    //initialize distribution struct for inverse prob
    distStruct dists;
    //initialize array for distributions
-   cudaMallocManaged( &(dists.distKey), 13*sizeof(int) );
+   cudaMallocManaged( &(dists.distKey), d*sizeof(int) );
    
    //initialize array of pointers for parameters.
-   cudaMallocManaged( &(dists.params), 13*sizeof(float*) );
+   cudaMallocManaged( &(dists.params), d*sizeof(float*) );
    //dists.params = new float*[ 13 ];
 
-   //read in distributions file
+   /*//read in distributions file
    if( readDistFile( distFile, &dists, 13) ){
     cout << endl << "READ DIST FILE SUCCESS!";
-   }
+   }*/
 
-   cout << endl << "Printing out data struct: " << endl;
+  //fill distribution struct
+  for(int i = 0; i < d; i++){
+    dists.distKey[i] = 0;
+    cudaMallocManaged( &( dists.params[i] ), 2*sizeof(float) );
+    dists.params[i][0]= rand() % 6;
+    dists.params[i][1]= rand() % 6;
+  } 
+  printf("\n Printing dist struct: \n");
+  for(int i = 0; i < d; i++ ){
+    printf( " %d | param1: %f \n param2: %f \n ", dists.distKey[i], dists.params[i][0], dists.params[i][1]);
+
+  }
+
+   /*cout << endl << "Printing out data struct: " << endl;
    for(int i = 0; i < 13; i++ ){
     cout << dists.distKey[i];
-   }
+   }*/
    /*ifstream src;
    char buffer[20];
    src.open(distFile, ifstream::in );
@@ -125,39 +142,39 @@ int main( int argc, char const *argv[])
     printf("\n CUSOLVER Version (Major,Minor,PatchLevel): %d.%d.%d\n", major,minor,patch);*/
 
    //allocated unified memory for storage of input covar matrix. 
-   //cudaMallocManaged(&r20Arr, r20Size*sizeof(double));
+   cudaMallocManaged(&r20Arr, r20Size*sizeof(double));
    //cudaMallocManaged(&r20ArrNF, r20Size*sizeof(double));
    //cudaMallocManaged(&r200Arr, r200n*r200n*sizeof(double));
    //cudaMallocManaged(&r20501Arr, r20501n*r20501n*sizeof(double));
 
-  // cudaMallocManaged(&sim_r20, r20Size*sizeof(double));
+   cudaMallocManaged(&sim_r20, r20Size*sizeof(double));
    //cudaMallocManaged(&sim_r200, sim20501Size*sizeof(double));
    //cudaMallocManaged(&sim_r20501, sim20501Size*sizeof(double));
-   cudaMallocManaged( &dtestArr, 13*sizeof(double) );
+   cudaMallocManaged( &dtestArr, 12*sizeof(double) );
 
-   /*//allocate device memory for simple testing
+   //allocate device memory for simple testing
    cudaMallocManaged( &dA0, 9*sizeof(double) );
-   cudaMallocManaged( &dAR, 6*sizeof(double) );
-   cudaMallocManaged( &dAC, 6*sizeof(double) );
+   //cudaMallocManaged( &dAR, 6*sizeof(double) );
+   //cudaMallocManaged( &dAC, 6*sizeof(double) );
    
 
    //copy explicitly defined matrix into device
    cudaMemcpy( dA0, A0, 9*sizeof(double), cudaMemcpyHostToDevice );
-   cudaMemcpy( dAR, AR, 6*sizeof(double), cudaMemcpyHostToDevice );
-   cudaMemcpy( dAC, AC, 6*sizeof(double), cudaMemcpyHostToDevice );
+   //cudaMemcpy( dAR, AR, 6*sizeof(double), cudaMemcpyHostToDevice );
+   //cudaMemcpy( dAC, AC, 6*sizeof(double), cudaMemcpyHostToDevice );
    
-*/
-cudaMemcpy( dtestArr, testArr, 13*sizeof(double), cudaMemcpyHostToDevice );
-cout << endl << "printing test array: ";
+
+cudaMemcpy( dtestArr, testArr, 12*sizeof(double), cudaMemcpyHostToDevice );
+/*cout << endl << "printing test array: ";
 for(int i = 0; i < 13; i++){
   cout << dtestArr[i] << ' ';
-}
+}*/
 
    //cudaMallocManaged(&r200Arr, r200Size*sizeof(float));
      
  //start timing
  
-  /*//Timing for file read r20
+  //Timing for file read r20
    cudaEvent_t readStart, readEnd;
    cudaEventCreate( &readStart );
    cudaEventCreate(  &readEnd );
@@ -165,7 +182,7 @@ for(int i = 0; i < 13; i++){
 
 
  //call function to read in from file
- if( readFromFile( r20501file, r20501Arr, r20501Size) ){
+ if( readFromFile( r20file, r20Arr, r20Size) ){
    cout << endl << "FILE OPEN SUCCESS!";
  }  
  else{
@@ -179,7 +196,7 @@ for(int i = 0; i < 13; i++){
  cudaEventElapsedTime( &readTime, readStart, readEnd );
  //print timing results
  cout << endl << "Reading in r20501: " << readTime << " ms." << endl;
-*/
+
   /*//Timing for file read r200
    cudaEventCreate( &readStart );
    cudaEventCreate(  &readEnd );
@@ -225,7 +242,7 @@ cudaEventRecord( cholStart, 0 );
 chol( r20501Arr, r20501n, CUBLAS_FILL_MODE_UPPER );   
 //synchronize threads
 cudaDeviceSynchronize();
-//chol(dAR, 3, CUBLAS_FILL_MODE_LOWER );
+chol(dAR, 3, CUBLAS_FILL_MODE_LOWER );
 //chol(dAC, 3, CUBLAS_FILL_MODE_LOWER );
 //End timing
 cudaEventRecord( cholEnd, 0);
@@ -233,25 +250,28 @@ cudaEventSynchronize( cholEnd );
 float cholTime;
 cudaEventElapsedTime( &cholTime, cholStart, cholEnd );
 cout << endl << "Cholesky r20501 Took: " << cholTime << " ms." << endl;
-
+*/
 
 //Timing for cholesky r200
-//cudaEventCreate( &cholStart ); 
-//cudaEventCreate( &cholEnd );
-//cudaEventRecord( cholStart, 0 );
-*/
-/*//call function to perform cholesky
-chol( r200Arr, 200, CUBLAS_FILL_MODE_UPPER );   
+cudaEvent_t cholStart, cholEnd;
+cudaEventCreate( &cholStart ); 
+cudaEventCreate( &cholEnd );
+cudaEventRecord( cholStart, 0 );
+
+//call function to perform cholesky
+//chol( r20Arr, d, CUBLAS_FILL_MODE_LOWER );  
+chol( dA0, 3, CUBLAS_FILL_MODE_UPPER) ;
 //synchronize threads
 cudaDeviceSynchronize();
-
+//fillZeros(r20Arr, d);
+fillZeros(dA0, 3 );
 //End timing
 cudaEventRecord( cholEnd, 0);
 cudaEventSynchronize( cholEnd );
 float cholTime1;
-cudaEventElapsedTime( &cholTime, cholStart, cholEnd );
+cudaEventElapsedTime( &cholTime1, cholStart, cholEnd );
 cout << endl << "Cholesky r200 Took: " << cholTime1 << " ms." << endl;
-*/
+
    //fclose(fp);
   /* fp = fopen("test_corr_matrix_d=200.txt", "r"); 
    if(fp)
@@ -261,8 +281,10 @@ cout << endl << "Cholesky r200 Took: " << cholTime1 << " ms." << endl;
              fscanf(fp, "%f", &r200[i]);
      }
       }*/
+//chol(r20, d, CUBLAS_FILL_MODE_LOWER );
+//cudaDeviceSynchronize();
 
-   /*//test input read by printing results
+   //test input read by printing results
   printf("\n DECOMP RESULTS: \n");
   for(int i = 0; i < 3; i++ ){
     for(int j = 0; j <3; j++ )
@@ -270,21 +292,29 @@ cout << endl << "Cholesky r200 Took: " << cholTime1 << " ms." << endl;
         printf(" %f", dA0[i*3+j]);
       } 
       printf("\n");
-   }*/
-///////// generate random variable //////////////////////////////
-/*//size_t n = 10;
-double * randMat;
-int time1 = time(NULL);
-cudaMallocManaged( &randMat, 10*sizeof(double) );
+   }
 
+
+
+
+///////// generate random variable //////////////////////////////
+/*size_t n = 10;
+double * randMat;
+
+cudaMallocManaged( &randMat, 10*sizeof(double) );
+*/
+int time1 = time(NULL);
 //timing
 cudaEvent_t randStart, randEnd;
 cudaEventCreate( &randStart ); 
 cudaEventCreate( &randEnd );
 cudaEventRecord( randStart, 0 );
 size_t r20501ss = 1093*20501;
+normGen( sim_r20, sim20Size, 0.0, 1.0, time1);
+//normGen( )
+cudaDeviceSynchronize();
 //normGen( sim_r200, sim200Size, 0.0, 1.0, time1 );
-normGen( sim_r20501, sim20501Size, 0.0,1.0, time1 );
+//normGen( sim_r20501, sim20501Size, 0.0,1.0, time1 );
 
 cudaEventRecord( randEnd, 0);
 cudaEventSynchronize( randEnd );
@@ -293,14 +323,14 @@ cudaEventElapsedTime( &randTime, randStart, randEnd );
 cout << endl << "RNG r200: " << randTime << " ms." << endl;
 
 cout <<endl << "TIME SEED: " << time1;
-//print results to screen
+/*//print results to screen
 printf("\n RANDOM MATRIX: \n");
-for(int i = 0; i < 200; i++ ){
-  for(int j=0; j < 200; j++){
-    printf(" %f", sim_r200[i*3+j]);
+for(int i = 0; i < n; i++ ){
+  for(int j=0; j < d; j++){
+    printf(" %f", sim_r20[i*d+j]);
     }
   printf("\n");
- }  */
+ }  
 
     /*for(int i = 0; i < 200; i++ ){
       for(int j = 0; j <200; j++ )
@@ -340,35 +370,66 @@ for(int i = 0; i < 2; i++ ){
 }
 cout << endl;*/
 
- /*//multiplication of cholesky w/ random matrix to get correlated random matrix
+ //multiplication of cholesky w/ random matrix to get correlated random matrix
  cudaEvent_t multStart, multEnd;
  cudaEventCreate( &multStart );
  cudaEventCreate( &multEnd );
  cudaEventRecord( multStart, 0 );
-  
- matMult( sim_r20501, r20501Arr, sim_r20501, r20501n, n, r20501n );
+ //matMult( sim_r20, r20Arr, sim_r20, r20n, n, r20n ); 
+ matMult( dtestArr, dA0, dtestArr, 3, 4, 4);
+ cudaDeviceSynchronize();
+ //matMult( sim_r20501, r20501Arr, sim_r20501, r20501n, n, r20501n );
  cudaEventRecord( multEnd, 0);
  cudaEventSynchronize( multEnd );
  float multTime;
  cudaEventElapsedTime( &multTime, multStart, multEnd );
  cout << endl << "mult r20: " << multTime << " ms." << endl;
  
- 
- //calling qnorm from stats lib works.
+
+ printf("\n MULT MATRIX: \n");
+for(int i = 0; i < 4; i++ ){
+  for(int j=0; j < 3; j++){
+    printf(" %f", dtestArr[i*3+j]);
+    }
+  printf("\n");
+ } 
+
+
+ ////////////////////// Inverse transformation ///////////////////////////////
+ cudaEvent_t invStart, invEnd;
+ cudaEventCreate( &invStart );
+ cudaEventCreate( &invEnd );
+ cudaEventRecord( invStart, 0 );
+ //invTransform<<<1,10>>>(sim_r20, dists.distKey, dists.params, d, n );
+ invTransform<<<2,3>>>(dtestArr, dists.distKey, dists.params, 3, 4);
+ cudaEventRecord( invEnd, 0 );
+ cudaEventSynchronize( invEnd );
+ float invTime;
+ cudaEventElapsedTime( &invTime, invStart, invEnd );
+ cout << endl << "inv r20: " << invTime << " ms." << endl;
+ /*//calling qnorm from stats lib works.
  cout << "TESTING FOR STATS LIBRARY" << endl;
  cout << "b4 Value = " << testdata;
  cout << "after value = " << stats::qnorm(testdata) << endl; 
-*/
 int d1 = 13;
-int n1 = 5;
+int n1 = 1;
+//float ans;
+//ans = stats::qgamma(0.1, 3,2);
+//printf("\n Qchisq: %f \n", ans );
 
-invTransform<<<2,3>>>(dtestArr, dists.distKey, dists.params, d1, n1);
+*/
 //testFunc<<<2,3>>>(dtestArr, 13 );
 cudaDeviceSynchronize();
 cout << endl << " Printing results after inverse transform";
-for(int i = 0; i < 13; i++){
-  cout << dtestArr[i] << ' ';
+for(int i = 0; i < 4; i++){
+  for(int j = 0; j < 3; j++){
+    cout << ' ' << dtestArr[i*3 + j];
+  }
+  cout << endl;
+  //cout << ' ' << stats::qchisq( dtestArr[i], 1.0);
 }
+
+
 //testing to see if library can be called from kernel
 /*cout << "TESTING KERNEL " << endl;
 cout << "B4 ARRAY : ";
@@ -391,17 +452,17 @@ for(int i = 0; i < 6; i++){
 cout << endl;
  */
    //free memory
-  // cudaFree(r20Arr);
+   cudaFree(r20Arr);
    //cudaFree(r200Arr);
    cudaFree(r20501Arr);
    cudaFree( dtestArr );
 
-   //cudaFree(dA0);
+   cudaFree(dA0);
    //cudaFree(randMat); 
    //cudaFree(M1);
    //cudaFree(M2);
    //cudaFree(M3);
-   //cudaFree(sim_r20);
+   cudaFree(sim_r20);
    //cudaFree(sim_r200);
    cudaFree(sim_r20501);
    cudaFree(dists.distKey);
@@ -557,4 +618,15 @@ bool readDistFile(const char* fileName, distStruct* dists, int numDists ){
       source.close();
       return false;
    }
+}
+
+
+void fillZeros( double* inMat, int dim ){
+  for(int i = 0; i < dim; i++){
+    for(int j = 0; j < dim; j++){
+      if( i < j ){
+        inMat[ i*dim + j ] = 0;
+      }
+    }
+  }
 }

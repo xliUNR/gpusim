@@ -1,9 +1,9 @@
 beta 2 5
 cauchy 0 0.5
-chi-squared 4
+exponential 1.5
 exponential 1.5
 f 2 1
-gamma 3.0 2.0
+poisson 1
 normal 0.0 1
 lognormal 0.0 0.125
 logistic 9 3
