@@ -22,7 +22,7 @@ void chol(double* inMat, int dim, cublasFillMode_t uplo ){
    //variables for cuSolver cholesky 
    cusolverDnHandle_t csrHandle = NULL;
    cusolverStatus_t status;
-   bool TESTFLAG = true;
+   bool TESTFLAG = false;
    //variables for workspace
    int workSize = 0;
    double* workPtr;
@@ -122,9 +122,9 @@ void normGen( double* outputPtr, size_t n, double mean, double stddev, int seed 
 
 //matrix mult
 //C = alpha*op(A)op(B) + beta*C
-//m is cols of matrix B
+//m is col of matrix B
 //n is rows of matrix A
-//k is rows of matrix B
+//k is rows of matrix A
 void matMult( double* matA, double* matB, double* outMat, int m, int n, int k ){
   //declare variables
   cublasHandle_t myHandle;
@@ -132,8 +132,9 @@ void matMult( double* matA, double* matB, double* outMat, int m, int n, int k ){
   double zero = 0;
   double one = 1;
   //variables for if matrix is normal, transpose, or hermitian t.
-  cublasOperation_t transa = CUBLAS_OP_N;
-  cublasOperation_t transb = CUBLAS_OP_T;
+  cublasOperation_t transa = CUBLAS_OP_T;
+
+  cublasOperation_t transb = CUBLAS_OP_N;
 
   //create library instance
   status = cublasCreate( &myHandle );
@@ -176,7 +177,7 @@ __global__ void invTransform( double* simData, int* distArrPtr,
     //stride over threads
     for(int j = threadIdx.x; j < d; j+=blockDim.x ){
       //first calculate cdf
-      //simData[ i*d + j ] = normcdf( simData[ i*d + j ] );
+      simData[ i*d + j ] = normcdf( simData[ i*d + j ] );
       //printf(" \n j value: %d i value: %d Uniq Val: %d value: %f", j, i, (i*d + j), simData[(i*d + j)] );
       //printf(" marginal key: %d", distArrPtr[j] );
 

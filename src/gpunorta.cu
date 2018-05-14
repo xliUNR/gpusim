@@ -61,7 +61,7 @@ int main( int argc, char const *argv[])
    int sim20Size = n * r20n;
    int sim20501Size =  n * r20501n;
    int sim200Size = 100000 * 300;
-   int d = 3;
+   int d = 20;
 
    //ifstream srcFile;
    double A0[3*3] = { 1.0, 2.0, 3.0, 2.0, 5.0, 5.0, 3.0, 5.0, 12.0 };
@@ -82,7 +82,7 @@ int main( int argc, char const *argv[])
    char r20501file[60] = "../test_corr_matrix_d=20501.txt";
    char distFile[60] = "../alldistributions";
 
-   r20Size = r20n*n;
+   r20Size = r20n*r20n;
    r200Size = r200n*n;
    r20501Size = r20501n * r20501n;
    //initialize distribution struct for inverse prob
@@ -103,8 +103,8 @@ int main( int argc, char const *argv[])
   for(int i = 0; i < d; i++){
     dists.distKey[i] = 0;
     cudaMallocManaged( &( dists.params[i] ), 2*sizeof(float) );
-    dists.params[i][0]= rand() % 6;
-    dists.params[i][1]= rand() % 6;
+    dists.params[i][0]= (rand() % 5 + 1);
+    dists.params[i][1]= (rand() % 5 + 1);
   } 
   printf("\n Printing dist struct: \n");
   for(int i = 0; i < d; i++ ){
@@ -147,7 +147,7 @@ int main( int argc, char const *argv[])
    //cudaMallocManaged(&r200Arr, r200n*r200n*sizeof(double));
    //cudaMallocManaged(&r20501Arr, r20501n*r20501n*sizeof(double));
 
-   cudaMallocManaged(&sim_r20, r20Size*sizeof(double));
+   cudaMallocManaged(&sim_r20, n*d*sizeof(double));
    //cudaMallocManaged(&sim_r200, sim20501Size*sizeof(double));
    //cudaMallocManaged(&sim_r20501, sim20501Size*sizeof(double));
    cudaMallocManaged( &dtestArr, 12*sizeof(double) );
@@ -259,7 +259,7 @@ cudaEventCreate( &cholEnd );
 cudaEventRecord( cholStart, 0 );
 
 //call function to perform cholesky
-//chol( r20Arr, d, CUBLAS_FILL_MODE_LOWER );  
+chol( r20Arr, d, CUBLAS_FILL_MODE_UPPER);  
 chol( dA0, 3, CUBLAS_FILL_MODE_UPPER) ;
 //synchronize threads
 cudaDeviceSynchronize();
@@ -284,16 +284,16 @@ cout << endl << "Cholesky r200 Took: " << cholTime1 << " ms." << endl;
 //chol(r20, d, CUBLAS_FILL_MODE_LOWER );
 //cudaDeviceSynchronize();
 
-   //test input read by printing results
+/*   //test input read by printing results
   printf("\n DECOMP RESULTS: \n");
-  for(int i = 0; i < 3; i++ ){
-    for(int j = 0; j <3; j++ )
+  for(int i = 0; i < d; i++ ){
+    for(int j = 0; j <d; j++ )
       {
-        printf(" %f", dA0[i*3+j]);
+        printf(" %f", r20Arr[i*d+j]);
       } 
       printf("\n");
    }
-
+*/
 
 
 
@@ -323,7 +323,7 @@ cudaEventElapsedTime( &randTime, randStart, randEnd );
 cout << endl << "RNG r200: " << randTime << " ms." << endl;
 
 cout <<endl << "TIME SEED: " << time1;
-/*//print results to screen
+//print results to screen
 printf("\n RANDOM MATRIX: \n");
 for(int i = 0; i < n; i++ ){
   for(int j=0; j < d; j++){
@@ -339,7 +339,7 @@ for(int i = 0; i < n; i++ ){
         } 
         printf("\n");
    }  
-     */ 
+      
 /////////////////////  matrix multiplication  /////////////////////////////////
 /*cudaEvent_t multStart, multEnd;
 cudaEventCreate( &multStart );
@@ -375,8 +375,8 @@ cout << endl;*/
  cudaEventCreate( &multStart );
  cudaEventCreate( &multEnd );
  cudaEventRecord( multStart, 0 );
- //matMult( sim_r20, r20Arr, sim_r20, r20n, n, r20n ); 
- matMult( dtestArr, dA0, dtestArr, 3, 4, 4);
+ matMult( sim_r20, r20Arr, sim_r20, d, n, d ); 
+ //matMult( dtestArr, dA0, dtestArr, 3, 4, 3);
  cudaDeviceSynchronize();
  //matMult( sim_r20501, r20501Arr, sim_r20501, r20501n, n, r20501n );
  cudaEventRecord( multEnd, 0);
@@ -387,9 +387,9 @@ cout << endl;*/
  
 
  printf("\n MULT MATRIX: \n");
-for(int i = 0; i < 4; i++ ){
-  for(int j=0; j < 3; j++){
-    printf(" %f", dtestArr[i*3+j]);
+for(int i = 0; i < n; i++ ){
+  for(int j=0; j < d; j++){
+    printf(" %f", sim_r20[i*d+j]);
     }
   printf("\n");
  } 
@@ -400,8 +400,8 @@ for(int i = 0; i < 4; i++ ){
  cudaEventCreate( &invStart );
  cudaEventCreate( &invEnd );
  cudaEventRecord( invStart, 0 );
- //invTransform<<<1,10>>>(sim_r20, dists.distKey, dists.params, d, n );
- invTransform<<<2,3>>>(dtestArr, dists.distKey, dists.params, 3, 4);
+ invTransform<<<1,10>>>(sim_r20, dists.distKey, dists.params, d, n );
+ //invTransform<<<2,3>>>(dtestArr, dists.distKey, dists.params, 3, 4);
  cudaEventRecord( invEnd, 0 );
  cudaEventSynchronize( invEnd );
  float invTime;
@@ -421,9 +421,9 @@ int n1 = 1;
 //testFunc<<<2,3>>>(dtestArr, 13 );
 cudaDeviceSynchronize();
 cout << endl << " Printing results after inverse transform";
-for(int i = 0; i < 4; i++){
-  for(int j = 0; j < 3; j++){
-    cout << ' ' << dtestArr[i*3 + j];
+for(int i = 0; i < n; i++){
+  for(int j = 0; j < d; j++){
+    cout << ' ' << sim_r20[i*d + j];
   }
   cout << endl;
   //cout << ' ' << stats::qchisq( dtestArr[i], 1.0);
