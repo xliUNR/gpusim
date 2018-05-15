@@ -54,14 +54,14 @@ int main( int argc, char const *argv[])
    int r20n = 20;
    int r200n = 200;
    int r20501n = 20501;
-   int n = 2000;
+   int n = 1000;
    int r20Size; 
    int r200Size;
    int r20501Size;
    int sim20Size = n * r20n;
    int sim20501Size =  n * r20501n;
-   int sim200Size = 100000 * 300;
-   int d = 20501;
+   int sim200Size = n * r200n;
+   int d = 200;
 
    //ifstream srcFile;
    double A0[3*3] = { 1.0, 2.0, 3.0, 2.0, 5.0, 5.0, 3.0, 5.0, 12.0 };
@@ -143,29 +143,29 @@ int main( int argc, char const *argv[])
     printf("\n CUSOLVER Version (Major,Minor,PatchLevel): %d.%d.%d\n", major,minor,patch);*/
 
    //allocated unified memory for storage of input covar matrix. 
-   cudaMallocManaged(&r20Arr, r20Size*sizeof(double));
+   //cudaMallocManaged(&r20Arr, r20Size*sizeof(double));
    //cudaMallocManaged(&r20ArrNF, r20Size*sizeof(double));
-   //cudaMallocManaged(&r200Arr, r200n*r200n*sizeof(double));
-   cudaMallocManaged(&r20501Arr, r20501n*r20501n*sizeof(double));
+   cudaMallocManaged(&r200Arr, r200n*r200n*sizeof(double));
+   //cudaMallocManaged(&r20501Arr, r20501n*r20501n*sizeof(double));
 
-   cudaMallocManaged(&sim_r20, n*d*sizeof(double));
-   //cudaMallocManaged(&sim_r200, sim20501Size*sizeof(double));
-   cudaMallocManaged(&sim_r20501, sim20501Size*sizeof(double));
-   cudaMallocManaged( &dtestArr, 12*sizeof(double) );
+   //cudaMallocManaged(&sim_r20, n*d*sizeof(double));
+   cudaMallocManaged(&sim_r200, sim200Size*sizeof(double));
+   //cudaMallocManaged(&sim_r20501, sim20501Size*sizeof(double));
+   //cudaMallocManaged( &dtestArr, 12*sizeof(double) );
 
    //allocate device memory for simple testing
-   cudaMallocManaged( &dA0, 9*sizeof(double) );
+   //cudaMallocManaged( &dA0, 9*sizeof(double) );
    //cudaMallocManaged( &dAR, 6*sizeof(double) );
    //cudaMallocManaged( &dAC, 6*sizeof(double) );
    
 
    //copy explicitly defined matrix into device
-   cudaMemcpy( dA0, A0, 9*sizeof(double), cudaMemcpyHostToDevice );
+   //cudaMemcpy( dA0, A0, 9*sizeof(double), cudaMemcpyHostToDevice );
    //cudaMemcpy( dAR, AR, 6*sizeof(double), cudaMemcpyHostToDevice );
    //cudaMemcpy( dAC, AC, 6*sizeof(double), cudaMemcpyHostToDevice );
    
 
-cudaMemcpy( dtestArr, testArr, 12*sizeof(double), cudaMemcpyHostToDevice );
+//cudaMemcpy( dtestArr, testArr, 12*sizeof(double), cudaMemcpyHostToDevice );
 /*cout << endl << "printing test array: ";
 for(int i = 0; i < 13; i++){
   cout << dtestArr[i] << ' ';
@@ -183,7 +183,7 @@ for(int i = 0; i < 13; i++){
 
 
  //call function to read in from file
- if( readFromFile( r20501file, r20501Arr, r20501Size) ){
+ if( readFromFile( r200file, r200Arr, r200Size) ){
    cout << endl << "FILE OPEN SUCCESS!";
  }  
  else{
@@ -260,11 +260,12 @@ cudaEventCreate( &cholEnd );
 cudaEventRecord( cholStart, 0 );
 
 //call function to perform cholesky
-chol( r20501Arr, d, CUBLAS_FILL_MODE_UPPER);  
+//chol( r20501Arr, d, CUBLAS_FILL_MODE_UPPER); 
+chol( r200Arr, r200n, CUBLAS_FILL_MODE_UPPER);
 //chol( dA0, 3, CUBLAS_FILL_MODE_UPPER) ;
 //synchronize threads
 cudaDeviceSynchronize();
-fillZeros(r20Arr, d);
+fillZeros(r200Arr, d);
 //fillZeros(dA0, 3 );
 //End timing
 cudaEventRecord( cholEnd, 0);
@@ -311,8 +312,8 @@ cudaEventCreate( &randStart );
 cudaEventCreate( &randEnd );
 cudaEventRecord( randStart, 0 );
 
-normGen( sim_r20501, sim20501Size, 0.0, 1.0, time1);
-//normGen( )
+//normGen( sim_r20501, sim20501Size, 0.0, 1.0, time1);
+normGen( sim_r200, sim200Size, 0.0, 1.0, time1 );
 cudaDeviceSynchronize();
 //normGen( sim_r200, sim200Size, 0.0, 1.0, time1 );
 //normGen( sim_r20501, sim20501Size, 0.0,1.0, time1 );
@@ -376,7 +377,8 @@ cout << endl;*/
  cudaEventCreate( &multStart );
  cudaEventCreate( &multEnd );
  cudaEventRecord( multStart, 0 );
- matMult( sim_r20501, r20501Arr, sim_r20501, d, n, d ); 
+ //matMult( sim_r20501, r20501Arr, sim_r20501, d, n, d ); 
+ matMult( sim_r200, r200Arr, sim_r200, r200n, n, r200n );
  //matMult( dtestArr, dA0, dtestArr, 3, 4, 3);
  cudaDeviceSynchronize();
  //matMult( sim_r20501, r20501Arr, sim_r20501, r20501n, n, r20501n );
@@ -401,7 +403,8 @@ for(int i = 0; i < n; i++ ){
  cudaEventCreate( &invStart );
  cudaEventCreate( &invEnd );
  cudaEventRecord( invStart, 0 );
- invTransform<<<32,32>>>(sim_r20501, dists.distKey, dists.params, d, n );
+ //invTransform<<<512,128>>>(sim_r20501, dists.distKey, dists.params, d, n );
+ invTransform<<<512, 128>>>( sim_r200, dists.distKey, dists.params, r200n, n);
  cudaDeviceSynchronize();
  //invTransform<<<2,3>>>(dtestArr, dists.distKey, dists.params, 3, 4);
  cudaEventRecord( invEnd, 0 );
