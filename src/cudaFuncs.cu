@@ -143,6 +143,10 @@ void matMult( double* matA, double* matB, double* outMat, int m, int n, int k ){
   status = cublasDgemm( myHandle, transa, transb, m, n, k, &one, matB,
                                             m, matA, k, &zero, outMat, m );
 
+  /*if( status == CUBLAS_STATUS_SUCCESS ){
+    printf(" \n matrix mult success! \n");
+  }
+  else if( status == )*/
   assert( status == CUBLAS_STATUS_SUCCESS );
 
   //destroy cublas instance
@@ -202,11 +206,11 @@ __device__ double invTransformHelper( double val, int key, float* paramsArr ){
   //int nTrials = 7;
   switch( key ){
     case 0:
-      printf(" \n value: %f \n", val );
+      /*printf(" \n value: %f \n", val );
       printf(" \n beta param val1: %f", paramsArr[0] );
-      printf(" \n beta param val2: %f", paramsArr[1] );
+      printf(" \n beta param val2: %f", paramsArr[1] );*/
       returnVal = stats::qbeta( val, paramsArr[0], paramsArr[1] );
-      printf("\n hey 0 worked: %f", returnVal);
+      //printf("\n hey 0 worked: %f", returnVal);
       break; 
 
     case 1:
@@ -215,84 +219,84 @@ __device__ double invTransformHelper( double val, int key, float* paramsArr ){
       break;
 
     case 2:
-      printf(" \n cauchy param val: %f", paramsArr[0] );
-      printf(" \n cauchy param val: %f", paramsArr[1] );
+      //printf(" \n cauchy param val: %f", paramsArr[0] );
+      //printf(" \n cauchy param val: %f", paramsArr[1] );
       returnVal = stats::qcauchy( val, paramsArr[0], paramsArr[1] );
-      printf("hey 2 worked \n");
+      //printf("hey 2 worked \n");
       break;  
     
     case 3:
-      printf(" \n value: %f \n", val );
-      printf(" \n chi-squared param val: %f", paramsArr[0] );
+      //printf(" \n value: %f \n", val );
+      //printf(" \n chi-squared param val: %f", paramsArr[0] );
       //returnVal = stats::qchisq( val, paramsArr[0] );
-      printf("hey 3 worked \n");
+      //printf("hey 3 worked \n");
       break;
 
     case 4:
-      printf(" \n exponential param val: %f", paramsArr[0] );
+      //printf(" \n exponential param val: %f", paramsArr[0] );
       returnVal = stats::qexp( val, paramsArr[0] );
-      printf("hey 4 worked: %f \n", returnVal);
+      //printf("hey 4 worked: %f \n", returnVal);
       break;
       
     case 5:
-      printf(" \n f param val1: %f", paramsArr[0] );
-      printf(" \n f param val2: %f", paramsArr[1] );
+      //printf(" \n f param val1: %f", paramsArr[0] );
+      //printf(" \n f param val2: %f", paramsArr[1] );
       returnVal = stats::qf( val, paramsArr[0], paramsArr[1] );
-      printf("hey 5 worked %f \n", returnVal);
+      //printf("hey 5 worked %f \n", returnVal);
       break;
       
     case 6:
-      printf(" \n gamma param val1: %f", paramsArr[0] );
-      printf(" \n gamma param val2: %f", paramsArr[1] );
+      //printf(" \n gamma param val1: %f", paramsArr[0] );
+      //printf(" \n gamma param val2: %f", paramsArr[1] );
       //returnVal = stats::qgamma(0.5 , paramsArr[0], paramsArr[1] );
-      printf("hey 6 worked \n");
+      //printf("hey 6 worked \n");
       break;
       
     case 7:
-      printf(" \n normal param val1: %f", paramsArr[0] );
-      printf(" \n normal param val2: %f", paramsArr[1] );      
+      //printf(" \n normal param val1: %f", paramsArr[0] );
+      //printf(" \n normal param val2: %f", paramsArr[1] );      
       returnVal = stats::qnorm( val, paramsArr[0], paramsArr[1] );
-      printf("hey 7 worked \n");
+      //printf("hey 7 worked \n");
       break;
       
     case 8:
-      printf(" \n log normal param val1: %f", paramsArr[0] );
-      printf(" \n log normal param val2: %f", paramsArr[1] );
+      //printf(" \n log normal param val1: %f", paramsArr[0] );
+      //printf(" \n log normal param val2: %f", paramsArr[1] );
       returnVal = stats::qlnorm( val, paramsArr[0], paramsArr[1] );
-      printf("hey 8 worked \n");
+      //printf("hey 8 worked \n");
       break;
       
     case 9:
-      printf(" \n logistic param val1: %f", paramsArr[0] );
-      printf(" \n logistic param val2: %f", paramsArr[1] );
+      //printf(" \n logistic param val1: %f", paramsArr[0] );
+      //printf(" \n logistic param val2: %f", paramsArr[1] );
       returnVal = stats::qlogis( val, paramsArr[0], paramsArr[1] );
-      printf("hey 9 worked \n");
+      //printf("hey 9 worked \n");
       break;
       
     case 10:
-      printf(" \n poisson param val1: %f", paramsArr[0] );
+      //printf(" \n poisson param val1: %f", paramsArr[0] );
       returnVal = stats::qpois( val, paramsArr[0] );
-      printf("hey 10 worked \n");
+      //printf("hey 10 worked \n");
       break;
       
     case 11:
-      printf(" \n t param val1: %f", paramsArr[0] );
+      //printf(" \n t param val1: %f", paramsArr[0] );
       returnVal = stats::qt( val, paramsArr[0] );
-      printf("hey 11 worked \n");
+      //printf("hey 11 worked \n");
       break;
       
     case 12:
-      printf(" \n uniform param val1: %f", paramsArr[0] );
-      printf(" \n uniform param val2: %f", paramsArr[1] );
+      //printf(" \n uniform param val1: %f", paramsArr[0] );
+      //printf(" \n uniform param val2: %f", paramsArr[1] );
       returnVal = stats::qunif( val, paramsArr[0], paramsArr[1] );
-      printf("hey 12 worked \n");
+      //printf("hey 12 worked \n");
       break; 
 
     case 13:
-      printf(" \n weibull param val1: %f", paramsArr[0] );
-      printf(" \n weibull param val2: %f", paramsArr[1] );
+      //printf(" \n weibull param val1: %f", paramsArr[0] );
+      //printf(" \n weibull param val2: %f", paramsArr[1] );
       returnVal = stats::qweibull( val, paramsArr[0], paramsArr[1] );
-      printf("hey 13 worked \n");
+      //printf("hey 13 worked \n");
       break;                      
   }
 

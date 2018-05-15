@@ -54,14 +54,14 @@ int main( int argc, char const *argv[])
    int r20n = 20;
    int r200n = 200;
    int r20501n = 20501;
-   int n = 1;
+   int n = 2000;
    int r20Size; 
    int r200Size;
    int r20501Size;
    int sim20Size = n * r20n;
    int sim20501Size =  n * r20501n;
    int sim200Size = 100000 * 300;
-   int d = 20;
+   int d = 20501;
 
    //ifstream srcFile;
    double A0[3*3] = { 1.0, 2.0, 3.0, 2.0, 5.0, 5.0, 3.0, 5.0, 12.0 };
@@ -83,7 +83,7 @@ int main( int argc, char const *argv[])
    char distFile[60] = "../alldistributions";
 
    r20Size = r20n*r20n;
-   r200Size = r200n*n;
+   r200Size = r200n*r200n;
    r20501Size = r20501n * r20501n;
    //initialize distribution struct for inverse prob
    distStruct dists;
@@ -106,11 +106,12 @@ int main( int argc, char const *argv[])
     dists.params[i][0]= (rand() % 5 + 1);
     dists.params[i][1]= (rand() % 5 + 1);
   } 
-  printf("\n Printing dist struct: \n");
+  
+  /*printf("\n Printing dist struct: \n");
   for(int i = 0; i < d; i++ ){
     printf( " %d | param1: %f \n param2: %f \n ", dists.distKey[i], dists.params[i][0], dists.params[i][1]);
 
-  }
+  }*/
 
    /*cout << endl << "Printing out data struct: " << endl;
    for(int i = 0; i < 13; i++ ){
@@ -145,11 +146,11 @@ int main( int argc, char const *argv[])
    cudaMallocManaged(&r20Arr, r20Size*sizeof(double));
    //cudaMallocManaged(&r20ArrNF, r20Size*sizeof(double));
    //cudaMallocManaged(&r200Arr, r200n*r200n*sizeof(double));
-   //cudaMallocManaged(&r20501Arr, r20501n*r20501n*sizeof(double));
+   cudaMallocManaged(&r20501Arr, r20501n*r20501n*sizeof(double));
 
    cudaMallocManaged(&sim_r20, n*d*sizeof(double));
    //cudaMallocManaged(&sim_r200, sim20501Size*sizeof(double));
-   //cudaMallocManaged(&sim_r20501, sim20501Size*sizeof(double));
+   cudaMallocManaged(&sim_r20501, sim20501Size*sizeof(double));
    cudaMallocManaged( &dtestArr, 12*sizeof(double) );
 
    //allocate device memory for simple testing
@@ -182,7 +183,7 @@ for(int i = 0; i < 13; i++){
 
 
  //call function to read in from file
- if( readFromFile( r20file, r20Arr, r20Size) ){
+ if( readFromFile( r20501file, r20501Arr, r20501Size) ){
    cout << endl << "FILE OPEN SUCCESS!";
  }  
  else{
@@ -259,12 +260,12 @@ cudaEventCreate( &cholEnd );
 cudaEventRecord( cholStart, 0 );
 
 //call function to perform cholesky
-chol( r20Arr, d, CUBLAS_FILL_MODE_UPPER);  
-chol( dA0, 3, CUBLAS_FILL_MODE_UPPER) ;
+chol( r20501Arr, d, CUBLAS_FILL_MODE_UPPER);  
+//chol( dA0, 3, CUBLAS_FILL_MODE_UPPER) ;
 //synchronize threads
 cudaDeviceSynchronize();
-//fillZeros(r20Arr, d);
-fillZeros(dA0, 3 );
+fillZeros(r20Arr, d);
+//fillZeros(dA0, 3 );
 //End timing
 cudaEventRecord( cholEnd, 0);
 cudaEventSynchronize( cholEnd );
@@ -284,7 +285,7 @@ cout << endl << "Cholesky r200 Took: " << cholTime1 << " ms." << endl;
 //chol(r20, d, CUBLAS_FILL_MODE_LOWER );
 //cudaDeviceSynchronize();
 
-/*   //test input read by printing results
+ /*  //test input read by printing results
   printf("\n DECOMP RESULTS: \n");
   for(int i = 0; i < d; i++ ){
     for(int j = 0; j <d; j++ )
@@ -292,8 +293,8 @@ cout << endl << "Cholesky r200 Took: " << cholTime1 << " ms." << endl;
         printf(" %f", r20Arr[i*d+j]);
       } 
       printf("\n");
-   }
-*/
+   }*/
+
 
 
 
@@ -309,8 +310,8 @@ cudaEvent_t randStart, randEnd;
 cudaEventCreate( &randStart ); 
 cudaEventCreate( &randEnd );
 cudaEventRecord( randStart, 0 );
-size_t r20501ss = 1093*20501;
-normGen( sim_r20, sim20Size, 0.0, 1.0, time1);
+
+normGen( sim_r20501, sim20501Size, 0.0, 1.0, time1);
 //normGen( )
 cudaDeviceSynchronize();
 //normGen( sim_r200, sim200Size, 0.0, 1.0, time1 );
@@ -323,14 +324,14 @@ cudaEventElapsedTime( &randTime, randStart, randEnd );
 cout << endl << "RNG r200: " << randTime << " ms." << endl;
 
 cout <<endl << "TIME SEED: " << time1;
-//print results to screen
+/*//print results to screen
 printf("\n RANDOM MATRIX: \n");
 for(int i = 0; i < n; i++ ){
   for(int j=0; j < d; j++){
     printf(" %f", sim_r20[i*d+j]);
     }
   printf("\n");
- }  
+ }  */
 
     /*for(int i = 0; i < 200; i++ ){
       for(int j = 0; j <200; j++ )
@@ -375,7 +376,7 @@ cout << endl;*/
  cudaEventCreate( &multStart );
  cudaEventCreate( &multEnd );
  cudaEventRecord( multStart, 0 );
- matMult( sim_r20, r20Arr, sim_r20, d, n, d ); 
+ matMult( sim_r20501, r20501Arr, sim_r20501, d, n, d ); 
  //matMult( dtestArr, dA0, dtestArr, 3, 4, 3);
  cudaDeviceSynchronize();
  //matMult( sim_r20501, r20501Arr, sim_r20501, r20501n, n, r20501n );
@@ -386,13 +387,13 @@ cout << endl;*/
  cout << endl << "mult r20: " << multTime << " ms." << endl;
  
 
- printf("\n MULT MATRIX: \n");
+/* printf("\n MULT MATRIX: \n");
 for(int i = 0; i < n; i++ ){
   for(int j=0; j < d; j++){
     printf(" %f", sim_r20[i*d+j]);
     }
   printf("\n");
- } 
+ } */
 
 
  ////////////////////// Inverse transformation ///////////////////////////////
@@ -400,7 +401,8 @@ for(int i = 0; i < n; i++ ){
  cudaEventCreate( &invStart );
  cudaEventCreate( &invEnd );
  cudaEventRecord( invStart, 0 );
- invTransform<<<1,10>>>(sim_r20, dists.distKey, dists.params, d, n );
+ invTransform<<<32,32>>>(sim_r20501, dists.distKey, dists.params, d, n );
+ cudaDeviceSynchronize();
  //invTransform<<<2,3>>>(dtestArr, dists.distKey, dists.params, 3, 4);
  cudaEventRecord( invEnd, 0 );
  cudaEventSynchronize( invEnd );
@@ -419,15 +421,15 @@ int n1 = 1;
 
 */
 //testFunc<<<2,3>>>(dtestArr, 13 );
-cudaDeviceSynchronize();
-cout << endl << " Printing results after inverse transform";
+
+/*cout << endl << " Printing results after inverse transform";
 for(int i = 0; i < n; i++){
   for(int j = 0; j < d; j++){
     cout << ' ' << sim_r20[i*d + j];
   }
   cout << endl;
   //cout << ' ' << stats::qchisq( dtestArr[i], 1.0);
-}
+}*/
 
 
 //testing to see if library can be called from kernel
@@ -449,8 +451,14 @@ cout << "AFTER ARRAY: ";
 for(int i = 0; i < 6; i++){
   cout << dtestArr[i] << ' ';
 }
+
+
 cout << endl;
  */
+
+float totTime = readTime + cholTime1 + randTime + multTime + invTime;
+cout << endl << endl << " TOTAL RUN TIME: " << totTime << endl ;
+
    //free memory
    cudaFree(r20Arr);
    //cudaFree(r200Arr);
