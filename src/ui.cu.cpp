@@ -1,4 +1,30 @@
+///////////////////////////////////////////////////////////////////////////////
+///////////////   This is the GPU version of NORTA   //////////////////////////
+///////////////////// Written by Eric Li //////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////
 
+
+
+/////////////////////////////  Includes  //////////////////////////////////////
+#include <cstdlib>
+#include <fstream>
+#include <cstdio>
+#include <iostream>
+#include <stdlib.h>
+#include <cusolverDn.h>
+#include <assert.h>
+#include <cuda.h>
+#include <time.h>
+#include <string.h>
+
+#include "cudaFuncs.h"
+#include "stats.hpp"
+
+using namespace std;
+
+
+///////////////////////////  struct declaration  //////////////////////////////
+//struct of arrays of distribution and their parameters
 
 
 struct distStruct
@@ -7,8 +33,18 @@ struct distStruct
        float** params; 
    };
 
+//////////////////////////// Function prototypes  /////////////////////////////
+//This function reads correlation matrix from file
+bool readFromFile(const char*, double*, int );
+//This function reads list of distributions from file
+bool readDistFile( const char*, distStruct*, int );
+//This function fills in lower part of matrix with zeros
+void fillZeros( double* inMat, int dim );
 
 
+
+
+/////////////////////////// Main Loop  ////////////////////////////////////////
 int main(int argc, char const *argv[])
 {
     bool progRepeat = true;
@@ -22,9 +58,15 @@ int main(int argc, char const *argv[])
     double* simMatrix;
     int corrSize, simSize;
     distStruct dists;
+    //vary grid and block structure for inverse transform kernel call
+    dim3 grid(512);
+    dim3 block(128);
 
+    //keep repeating if flag is true
     while(progRepeat == true ){
-        //ask user for input
+      //ask for input arguments if user didn't provide through command line  
+      if(argc <= 1 ){
+              //ask user for input
         cout << endl << "Enter in correlation matrix file name: ";
         cin >> corrFileName;
 
@@ -36,7 +78,14 @@ int main(int argc, char const *argv[])
 
         cout << endl << "Enter in Number of simulation replicates: ";
         cin >> n;
-
+        }
+      else{
+        corrFileName = argv[1];
+        distFileName = argv[2];  
+        d = argv[3];
+        n = argv[4];
+      }    
+        //set sizes for correlation matrix and simulation matrix
         corrSize = d*d;
         simSize = n*d;
 
@@ -67,21 +116,42 @@ int main(int argc, char const *argv[])
 
           } 
 
+          //cuda timing
+          cudaEvent_t startTime, endTime;
+          cudaEventCreate( &startTime );
+          cudaEventCreate( &endTime );
+          cudaEventRecord( startTime, 0 );
+           
           //read in distributions from file
           readDistFile( distFileName, d );
 
           //Cholesky decomp of correlation matrix
           chol( corrMatrix, d, CUBLAS_FILL_MODE_UPPER );
+
           //generate i.i.d random variable matrix
           int time1 = time(NULL);
           normGen( simMatrix, simSize, 0.0, 1.0, time1 );
+          cudaDeviceSynchronize();
+
+          
           //multiply cholesky decomp w/ random var matrix to get correlated
           //random var
-          matMult( corrMatrix, simMatrix, simSize, corrSize );
+          matMult( simMatrix, corrMatrix, d, n, d );
+          cudaDeviceSynchronize();
+
+          
           //perform inverse probability transformation
-          invTransform( simMatrix, dists->distKeys, dists->params, d, n );
+          invTransform<<<grid,block>>>( simMatrix, dists.distKeys, dists.params, d, n );
 
-
+          
+          //End Timing
+          cudaEventRecord( endTime );
+          cudaEventSynchronize( endTime );
+          float elapsedTime;
+          cudaEventElapsedTime( &elapsedTime, startTime, endTime );
+          
+          //print timing results
+          cout << endl << "The Program took: " << elapsedTime << "milliseconds to run.";   
 
         While( askRepeat ){
            cout << endl << "Would you like to run program again? (y/n)? ";
