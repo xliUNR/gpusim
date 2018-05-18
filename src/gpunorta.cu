@@ -36,7 +36,7 @@ struct distStruct
 bool readFromFile(const char*, double*, int );
 //This function reads list of distributions from file
 bool readDistFile( const char*, distStruct*, int );
-//This function fills in lower part of matrix with zeros
+//This function fills in upper part of matrix with zeros
 void fillZeros( double* inMat, int dim );
 
 
@@ -46,25 +46,36 @@ int main( int argc, char const *argv[])
 {
  //initialize variables
    //initiliaze arrays for holding input data
-   double* r20Arr;
+   /*double* r20Arr;
    double* r20ArrNF; 
    double* r200Arr;
-   double* r20501Arr;
+   double* r20501Arr;*/
 
-   int r20n = 20;
+   double* corrMatrix;
+   double* simMatrix;
+   int n = 2000;
+   int d = 20501;
+
+   int simSize = n*d;
+   int corrSize = d*d;
+   /*int r20n = 20;
    int r200n = 200;
    int r20501n = 20501;
-   int n = 1000;
+   
+
    int r20Size; 
    int r200Size;
    int r20501Size;
    int sim20Size = n * r20n;
    int sim20501Size =  n * r20501n;
-   int sim200Size = n * r200n;
-   int d = 200;
+   int sim200Size = n * r200n;*/
+
+   
+
+   
 
    //ifstream srcFile;
-   double A0[3*3] = { 1.0, 2.0, 3.0, 2.0, 5.0, 5.0, 3.0, 5.0, 12.0 };
+   /*double A0[3*3] = { 1.0, 2.0, 3.0, 2.0, 5.0, 5.0, 3.0, 5.0, 12.0 };
    double AC[6] = {1.0, 2.0, 3.0, 5.0, 5.0, 12.0};
    double AR[6] = {1.0, 2.0, 5.0, 3.0, 5.0, 12.0};
    double testdata = 0.1;
@@ -72,19 +83,21 @@ int main( int argc, char const *argv[])
    double *dtestArr;
    double* dA0;
    double* dAR;
-   double* dAC;
+   double* dAC;*/
+
    double* sim_r20;
    double* sim_r200;
    double* sim_r20501;
+
    //file names
    char r20file[60] = "../test_corr_matrix_d=20.txt";
    char r200file[60] = "../test_corr_matrix_d=200.txt";
    char r20501file[60] = "../test_corr_matrix_d=20501.txt";
-   char distFile[60] = "../alldistributions";
+   char r20distFile[60] = "../betar20.csv";
+   char r200distFile[60] = "../betar200.csv";
+   char r20501distFile[60] = "../betar20501.csv";
 
-   r20Size = r20n*r20n;
-   r200Size = r200n*r200n;
-   r20501Size = r20501n * r20501n;
+
    //initialize distribution struct for inverse prob
    distStruct dists;
    //initialize array for distributions
@@ -94,18 +107,26 @@ int main( int argc, char const *argv[])
    cudaMallocManaged( &(dists.params), d*sizeof(float*) );
    //dists.params = new float*[ 13 ];
 
-   /*//read in distributions file
-   if( readDistFile( distFile, &dists, 13) ){
-    cout << endl << "READ DIST FILE SUCCESS!";
-   }*/
+   //allocate memory for matrices
+   cudaMallocManaged( &simMatrix, n*d*sizeof(double) );
+   cudaMallocManaged( &corrMatrix, d*d*sizeof(double) );
 
-  //fill distribution struct
+
+   //read in distributions file
+   if( readDistFile( r20501distFile, &dists, d) ){
+    cout << endl << "READ DIST FILE SUCCESS!";
+   }
+   else{
+    cout << endl << "Error reading in distributions file!";
+   }
+
+ /* //fill distribution struct,
   for(int i = 0; i < d; i++){
     dists.distKey[i] = 0;
     cudaMallocManaged( &( dists.params[i] ), 2*sizeof(float) );
     dists.params[i][0]= (rand() % 5 + 1);
     dists.params[i][1]= (rand() % 5 + 1);
-  } 
+  } */
   
   /*printf("\n Printing dist struct: \n");
   for(int i = 0; i < d; i++ ){
@@ -145,13 +166,15 @@ int main( int argc, char const *argv[])
    //allocated unified memory for storage of input covar matrix. 
    //cudaMallocManaged(&r20Arr, r20Size*sizeof(double));
    //cudaMallocManaged(&r20ArrNF, r20Size*sizeof(double));
-   cudaMallocManaged(&r200Arr, r200n*r200n*sizeof(double));
+   //cudaMallocManaged(&r200Arr, r200n*r200n*sizeof(double));
    //cudaMallocManaged(&r20501Arr, r20501n*r20501n*sizeof(double));
-
    //cudaMallocManaged(&sim_r20, n*d*sizeof(double));
-   cudaMallocManaged(&sim_r200, sim200Size*sizeof(double));
+   //cudaMallocManaged(&sim_r200, sim200Size*sizeof(double));
    //cudaMallocManaged(&sim_r20501, sim20501Size*sizeof(double));
-   //cudaMallocManaged( &dtestArr, 12*sizeof(double) );
+   //cudaMallocManaged( &dtestArr, 12*sizeof(double) );\
+
+   
+
 
    //allocate device memory for simple testing
    //cudaMallocManaged( &dA0, 9*sizeof(double) );
@@ -183,7 +206,7 @@ for(int i = 0; i < 13; i++){
 
 
  //call function to read in from file
- if( readFromFile( r200file, r200Arr, r200Size) ){
+ if( readFromFile( r20501file, corrMatrix, corrSize ) ){
    cout << endl << "FILE OPEN SUCCESS!";
  }  
  else{
@@ -196,7 +219,7 @@ for(int i = 0; i < 13; i++){
  float readTime;
  cudaEventElapsedTime( &readTime, readStart, readEnd );
  //print timing results
- cout << endl << "Reading in r20501: " << readTime << " ms." << endl;
+ cout << endl << "Reading in correlation matrix: " << readTime << " ms." << endl;
 
   /*//Timing for file read r200
    cudaEventCreate( &readStart );
@@ -261,11 +284,11 @@ cudaEventRecord( cholStart, 0 );
 
 //call function to perform cholesky
 //chol( r20501Arr, d, CUBLAS_FILL_MODE_UPPER); 
-chol( r200Arr, r200n, CUBLAS_FILL_MODE_UPPER);
+chol( corrMatrix, d, CUBLAS_FILL_MODE_UPPER);
 //chol( dA0, 3, CUBLAS_FILL_MODE_UPPER) ;
 //synchronize threads
 cudaDeviceSynchronize();
-fillZeros(r200Arr, d);
+fillZeros(corrMatrix, d);
 //fillZeros(dA0, 3 );
 //End timing
 cudaEventRecord( cholEnd, 0);
@@ -313,7 +336,7 @@ cudaEventCreate( &randEnd );
 cudaEventRecord( randStart, 0 );
 
 //normGen( sim_r20501, sim20501Size, 0.0, 1.0, time1);
-normGen( sim_r200, sim200Size, 0.0, 1.0, time1 );
+normGen( simMatrix, simSize, 0.0, 1.0, time1 );
 cudaDeviceSynchronize();
 //normGen( sim_r200, sim200Size, 0.0, 1.0, time1 );
 //normGen( sim_r20501, sim20501Size, 0.0,1.0, time1 );
@@ -322,7 +345,7 @@ cudaEventRecord( randEnd, 0);
 cudaEventSynchronize( randEnd );
 float randTime;
 cudaEventElapsedTime( &randTime, randStart, randEnd );
-cout << endl << "RNG r200: " << randTime << " ms." << endl;
+cout << endl << "RNG: " << randTime << " ms." << endl;
 
 cout <<endl << "TIME SEED: " << time1;
 /*//print results to screen
@@ -340,37 +363,10 @@ for(int i = 0; i < n; i++ ){
           printf("%f", r200[i*20+j]);
         } 
         printf("\n");
-   }  
+   } */ 
       
 /////////////////////  matrix multiplication  /////////////////////////////////
-/*cudaEvent_t multStart, multEnd;
-cudaEventCreate( &multStart );
-cudaEventCreate( &multEnd );
-cudaEventRecord( multStart, 0 );*/
-/*double* M1;
-double* M2;
-double* M3;
-//allocate memory for matrix testing
-cudaMallocManaged( &M1, 6*sizeof(double) );
-cudaMallocManaged( &M2, 3*sizeof(double) );
-cudaMallocManaged( &M3, 2*sizeof(double) );
 
-for(int i = 0; i < 6; i ++){
-  M1[i] = i;
-}
-for(int i = 0; i < 3; i++ ){
-  M2[i] = i;
-}
-*/
-//parameters are: cols of M2, rows of M1, row of M2
-//matMult(M1, M2, M3, 1, 2, 3);
-
-/*//print results
-cout << endl << "MATRIX MULT RESULTS" << endl;
-for(int i = 0; i < 2; i++ ){
-  cout << endl << M3[i];
-}
-cout << endl;*/
 
  //multiplication of cholesky w/ random matrix to get correlated random matrix
  cudaEvent_t multStart, multEnd;
@@ -378,7 +374,7 @@ cout << endl;*/
  cudaEventCreate( &multEnd );
  cudaEventRecord( multStart, 0 );
  //matMult( sim_r20501, r20501Arr, sim_r20501, d, n, d ); 
- matMult( sim_r200, r200Arr, sim_r200, r200n, n, r200n );
+ matMult( simMatrix, corrMatrix, simMatrix, d, n, d );
  //matMult( dtestArr, dA0, dtestArr, 3, 4, 3);
  cudaDeviceSynchronize();
  //matMult( sim_r20501, r20501Arr, sim_r20501, r20501n, n, r20501n );
@@ -386,7 +382,7 @@ cout << endl;*/
  cudaEventSynchronize( multEnd );
  float multTime;
  cudaEventElapsedTime( &multTime, multStart, multEnd );
- cout << endl << "mult r20: " << multTime << " ms." << endl;
+ cout << endl << "multiply Time: " << multTime << " ms." << endl;
  
 
 /* printf("\n MULT MATRIX: \n");
@@ -404,14 +400,14 @@ for(int i = 0; i < n; i++ ){
  cudaEventCreate( &invEnd );
  cudaEventRecord( invStart, 0 );
  //invTransform<<<512,128>>>(sim_r20501, dists.distKey, dists.params, d, n );
- invTransform<<<512, 128>>>( sim_r200, dists.distKey, dists.params, r200n, n);
+ invTransform<<<512, 128>>>( simMatrix, dists.distKey, dists.params, d, n);
  cudaDeviceSynchronize();
  //invTransform<<<2,3>>>(dtestArr, dists.distKey, dists.params, 3, 4);
  cudaEventRecord( invEnd, 0 );
  cudaEventSynchronize( invEnd );
  float invTime;
  cudaEventElapsedTime( &invTime, invStart, invEnd );
- cout << endl << "inv r20: " << invTime << " ms." << endl;
+ cout << endl << "inv time: " << invTime << " ms." << endl;
  /*//calling qnorm from stats lib works.
  cout << "TESTING FOR STATS LIBRARY" << endl;
  cout << "b4 Value = " << testdata;
@@ -463,19 +459,22 @@ float totTime = readTime + cholTime1 + randTime + multTime + invTime;
 cout << endl << endl << " TOTAL RUN TIME: " << totTime << endl ;
 
    //free memory
-   cudaFree(r20Arr);
+  
    //cudaFree(r200Arr);
-   cudaFree(r20501Arr);
-   cudaFree( dtestArr );
+   //cudaFree(r20501Arr);
+   //cudaFree( dtestArr );
 
-   cudaFree(dA0);
+   //cudaFree(dA0);
    //cudaFree(randMat); 
    //cudaFree(M1);
    //cudaFree(M2);
    //cudaFree(M3);
-   cudaFree(sim_r20);
+   //cudaFree(sim_r20);
    //cudaFree(sim_r200);
-   cudaFree(sim_r20501);
+   //cudaFree(sim_r20501);
+
+   cudaFree( simMatrix );
+   cudaFree( corrMatrix );
    cudaFree(dists.distKey);
    
    for( int i = 0; i < d; i++ ){
@@ -483,6 +482,9 @@ cout << endl << endl << " TOTAL RUN TIME: " << totTime << endl ;
    }
 
    cudaFree( dists.params );
+
+   return 0;
+
 }
 
 
@@ -517,8 +519,8 @@ bool readDistFile(const char* fileName, distStruct* dists, int numDists ){
       //loop over all distributions 
       for( int i = 0; i < numDists; i++ ){ 
          source >> distName;
-         cout << "NAME OF DIST: ";
-         cout << endl << distName << endl;
+         //cout << "NAME OF DIST: ";
+         //cout << endl << distName << endl;
          //test for each distribution supported, 14 total, 
          //sets params accordingly
          if( strcmp( "beta", distName) == 0 ){
@@ -620,6 +622,7 @@ bool readDistFile(const char* fileName, distStruct* dists, int numDists ){
           return false;
         }               
       }
+
       source.close();
       return true;  
    }

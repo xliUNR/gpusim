@@ -206,9 +206,9 @@ __device__ double invTransformHelper( double val, int key, float* paramsArr ){
   //int nTrials = 7;
   switch( key ){
     case 0:
-      /*printf(" \n value: %f \n", val );
-      printf(" \n beta param val1: %f", paramsArr[0] );
-      printf(" \n beta param val2: %f", paramsArr[1] );*/
+      //printf(" \n value: %f \n", val );
+      //printf(" \n beta param val1: %f", paramsArr[0] );
+      //printf(" \n beta param val2: %f", paramsArr[1] );
       returnVal = stats::qbeta( val, paramsArr[0], paramsArr[1] );
       //printf("\n hey 0 worked: %f", returnVal);
       break; 

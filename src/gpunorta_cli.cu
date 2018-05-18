@@ -29,7 +29,7 @@ using namespace std;
 
 struct distStruct
    {
-       int* distKeys;
+       int* distKey;
        float** params; 
    };
 
@@ -38,8 +38,10 @@ struct distStruct
 bool readFromFile(const char*, double*, int );
 //This function reads list of distributions from file
 bool readDistFile( const char*, distStruct*, int );
-//This function fills in lower part of matrix with zeros
-void fillZeros( double* inMat, int dim );
+//This function fills in upper part of matrix with zeros
+void fillZeros( double* inMat, int );
+//This function prints simulation matrix to file
+bool printMatToFile(char* , double* , int , int );
 
 
 
@@ -47,23 +49,25 @@ void fillZeros( double* inMat, int dim );
 /////////////////////////// Main Loop  ////////////////////////////////////////
 int main(int argc, char const *argv[])
 {
-    bool progRepeat = true;
+    bool progRepeat = false;
     bool askRepeat = true;
     bool fileRep = true;
     char corrFileName[60];
     char distFileName[60];
-    char userRes[10];
+    char outputFName[60];
+    char userRes;
     int d, n;
     double* corrMatrix;
     double* simMatrix;
     int corrSize, simSize;
     distStruct dists;
-    //vary grid and block structure for inverse transform kernel call
+
+    //control grid and block structure for inverse transform kernel call
     dim3 grid(512);
     dim3 block(128);
 
-    //keep repeating if flag is true
-    while(progRepeat == true ){
+    //main loop
+    do{
       //ask for input arguments if user didn't provide through command line  
       if(argc <= 1 ){
               //ask user for input
@@ -79,11 +83,19 @@ int main(int argc, char const *argv[])
         cout << endl << "Enter in Number of simulation replicates: ";
         cin >> n;
         }
+
       else{
-        corrFileName = argv[1];
-        distFileName = argv[2];  
-        d = argv[3];
-        n = argv[4];
+
+        strcpy( corrFileName, argv[1] );
+        strcpy( distFileName, argv[2] );
+
+        cout << endl << "correlations file name: " << corrFileName;
+        cout << endl << "distributions file name: " << distFileName;
+
+        d = atoi( argv[3] );
+        n = atoi( argv[4] );
+        cout << endl << "n: " << n;
+        cout << endl << "d: " << d;
       }    
         //set sizes for correlation matrix and simulation matrix
         corrSize = d*d;
@@ -96,8 +108,15 @@ int main(int argc, char const *argv[])
         cudaMallocManaged( &( dists.distKey ), d*sizeof(int) );
         cudaMallocManaged( &( dists.params ), d*sizeof(float*) );
 
+        //cuda timing
+          cudaEvent_t startTime, endTime;
+          cudaEventCreate( &startTime );
+          cudaEventCreate( &endTime );
+          cudaEventRecord( startTime, 0 );
+           
+
           //Read in correlation matrix from file
-          while( !readFromFile( corrFileName, corrMatrix, n*d ) && fileRep ){
+          while( !readFromFile( corrFileName, corrMatrix, corrSize ) && fileRep ){
              cout << endl << "Error opening correlation matrix file! ";
              cout << endl << "Would you like to try again? (y/n)";
              cin >> userRes;
@@ -108,41 +127,39 @@ int main(int argc, char const *argv[])
               }
               else if( userRes == 'n' | userRes == 'N' ){
                  fileRep = false;
-                 exit();
+                 return 0;
               }
               else{
                   cout << endl <<"Please enter in a valid response y or n.";
               }
 
-          } 
-
-          //cuda timing
-          cudaEvent_t startTime, endTime;
-          cudaEventCreate( &startTime );
-          cudaEventCreate( &endTime );
-          cudaEventRecord( startTime, 0 );
-           
+          }
           //read in distributions from file
-          readDistFile( distFileName, d );
+          readDistFile( distFileName, &dists, d );
+          cout << endl << "Distribution file read!";
 
           //Cholesky decomp of correlation matrix
           chol( corrMatrix, d, CUBLAS_FILL_MODE_UPPER );
+          //fill array with zeros
+          fillZeros( corrMatrix, d );
 
+          cout << endl << "Cholesky decomposition complete!";
           //generate i.i.d random variable matrix
           int time1 = time(NULL);
           normGen( simMatrix, simSize, 0.0, 1.0, time1 );
           cudaDeviceSynchronize();
-
+          cout << endl << "Normal generation complete!";
           
           //multiply cholesky decomp w/ random var matrix to get correlated
           //random var
-          matMult( simMatrix, corrMatrix, d, n, d );
+          matMult( simMatrix, corrMatrix, simMatrix, d, n, d );
           cudaDeviceSynchronize();
-
+          cout << endl << "Matrix multiplication complete!";
           
           //perform inverse probability transformation
-          invTransform<<<grid,block>>>( simMatrix, dists.distKeys, dists.params, d, n );
-
+          invTransform<<<grid,block>>>
+                        ( simMatrix, dists.distKey, dists.params, d, n );
+          cout << endl << "Inverse transformation complete!";
           
           //End Timing
           cudaEventRecord( endTime );
@@ -151,26 +168,39 @@ int main(int argc, char const *argv[])
           cudaEventElapsedTime( &elapsedTime, startTime, endTime );
           
           //print timing results
-          cout << endl << "The Program took: " << elapsedTime << "milliseconds to run.";   
+          cout << endl << "The Program took: " << elapsedTime << " milliseconds to run.";   
 
-        While( askRepeat ){
+          cout << endl << "Please enter in name of file to save";
+          cout << " simulation matrix to: ";
+          cin >> outputFName;
+
+          if( printMatToFile( outputFName, simMatrix, n, d ) == true ){
+            cout << endl << "Printing matrix to file success!";
+          }
+          else{
+            cout << endl << "Error printing sim matrix to file";
+          }
+
+          do{
            cout << endl << "Would you like to run program again? (y/n)? ";
-           cin >> userResponse;
+           cin >> userRes;
 
-           if( userRes == 'y' | userRes == "yes" 
-                    | userRes == 'Y' | userRes == "Yes" | userRes == "YES"){
+           if( userRes == 'y' | userRes == 'Y' ){
               askRepeat = false; 
+              progRepeat = true;
            }
 
-           else if( userRes == 'n' | userRes == 'N' | userRes == "no"
-                    | userRes == "No" | userRes == "NO" ){
+           else if( userRes == 'n' | userRes == 'N' ){
               askRepeat = false;
               progRepeat = false; 
            }
            else{
               cout << endl << "Invalid response, please answer y or n"; 
            }
-        }
+
+
+        }while( askRepeat );
+
        //free memory
        cudaFree( corrMatrix );
        cudaFree( simMatrix );
@@ -181,7 +211,7 @@ int main(int argc, char const *argv[])
 
        cudaFree( dists.params );
 
-    }
+    }while( progRepeat == true );
     return 0;
 }
 
@@ -215,8 +245,8 @@ bool readDistFile(const char* fileName, distStruct* dists, int numDists ){
       //loop over all distributions 
       for( int i = 0; i < numDists; i++ ){ 
          source >> distName;
-         cout << "NAME OF DIST: ";
-         cout << endl << distName << endl;
+         //cout << "NAME OF DIST: ";
+         //cout << endl << distName << endl;
          //test for each distribution supported, 14 total, 
          //sets params accordingly
          if( strcmp( "beta", distName) == 0 ){
@@ -224,6 +254,7 @@ bool readDistFile(const char* fileName, distStruct* dists, int numDists ){
             cudaMallocManaged( &( dists->params[i] ), 2*sizeof(float) );
             source >> dists->params[i][0];
             source >> dists->params[i][1];
+            
          }
 
          /*else if( strcmp( "binomial", distName) == 0 ){
@@ -337,5 +368,24 @@ void fillZeros( double* inMat, int dim ){
         inMat[ i*dim + j ] = 0;
       }
     }
+  }
+}
+
+bool printMatToFile(char* outFileName, double* inMat, int rows, int cols ){
+  ofstream fout;
+  fout.open( outFileName, ofstream::out );
+  //loop over all values of matrix and write them to file
+  if( fout ){
+    for(int i = 0; i < rows; i++ ){
+      for(int j = 0; j < cols; j++ ){
+        fout << inMat[ i*cols + j ] << ' ';
+      }
+      fout << endl;
+    }
+    fout.close();
+    return true;
+  }  
+  else{
+    return false;
   }
 }
