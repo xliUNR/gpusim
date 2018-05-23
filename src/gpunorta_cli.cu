@@ -78,6 +78,9 @@ int main(int argc, char const *argv[])
    d = atoi( argv[3] );
    n = atoi( argv[4] );
    seed = atoi( argv[5] );
+   //copy name of output file name for simulation matrix
+   strcpy( outputFName, argv[6] );
+   
    //cout << endl << "n: " << n;
    //cout << endl << "d: " << d;
          
@@ -140,9 +143,6 @@ int main(int argc, char const *argv[])
   //print timing results
   cout << endl << "The Program took: " << elapsedTime << " milliseconds to run.";   
 
-  cout << endl << "Please enter in name of file to save";
-  cout << " simulation matrix to: ";
-  cin >> outputFName;
 
   if( printMatToFile( outputFName, simMatrix, n, d ) == true ){
     cout << endl << "Printing matrix to file success!";
