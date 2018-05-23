@@ -16,6 +16,7 @@
 #include <cuda.h>
 #include <time.h>
 #include <string.h>
+#include <math.h>
 
 #include "cudaFuncs.h"
 #include "stats.hpp"
@@ -42,6 +43,9 @@ bool readDistFile( const char*, distStruct*, int );
 void fillZeros( double* inMat, int );
 //This function prints simulation matrix to file
 bool printMatToFile(char* , double* , int , int );
+//This function is the sequential version of the cholesky
+void seqChol( double*, int );
+
 
 
 
@@ -335,4 +339,37 @@ bool printMatToFile(char* outFileName, double* inMat, int rows, int cols ){
   else{
     return false;
   }
+}
+
+void seqChol( double* inMat, int n ){
+   double* lower; 
+   lower = new double[n*n];
+   memset( lower, 0, sizeof(lower) );
+
+   //Decomposing a matrix
+   for( int i = 0; i < n; i++ ){
+      for( int j = 0; j <= i; j++ ){
+         double sum = 0;
+
+         if( j == i ){
+            for( int k = 0; k < j; k++ )
+               sum += pow( lower[ j*n + k ], 2 );
+            lower[ j*n+j ] = sqrt( inMat[ j*n+j ] - sum );
+            
+         }
+
+         else{
+            for( int k = 0; k < j; k++ )
+               sum += ( lower[ i*n+k ] * lower[ j*n+k ] );
+            lower[ i*n+j ] = ( inMat[ i*n+j ] - sum ) / lower[ j*n+j ];      
+        } 
+
+      }
+   }
+   //transfer over to starting matrix
+   for( int l = 0; l < n*n; l++ ){
+      inMat[l] = lower[l];
+   }
+
+   delete [] lower;
 }
