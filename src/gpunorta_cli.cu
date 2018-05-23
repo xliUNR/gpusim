@@ -49,9 +49,6 @@ bool printMatToFile(char* , double* , int , int );
 /////////////////////////// Main Loop  ////////////////////////////////////////
 int main(int argc, char const *argv[])
 {
-    bool progRepeat = false;
-    bool askRepeat = true;
-    bool fileRep = true;
     char corrFileName[60];
     char distFileName[60];
     char outputFName[60];
@@ -66,153 +63,102 @@ int main(int argc, char const *argv[])
     dim3 grid(512);
     dim3 block(128);
 
-    //main loop
-    do{
-      //ask for input arguments if user didn't provide through command line  
-      if(argc <= 1 ){
-              //ask user for input
-        cout << endl << "Enter in correlation matrix file name: ";
-        cin >> corrFileName;
 
-        cout << endl << "Enter in distributions file name: ";
-        cin >> distFileName;
+   //copy command line params for correlation and distribution files 
+   strcpy( corrFileName, argv[1] );
+   strcpy( distFileName, argv[2] );
 
-        cout << endl << "Enter in dimension of correlation matrix: ";
-        cin >> d;
+   //cout << endl << "correlations file name: " << corrFileName;
+   //cout << endl << "distributions file name: " << distFileName;
 
-        cout << endl << "Enter in Number of simulation replicates: ";
-        cin >> n;
-        }
+   d = atoi( argv[3] );
+   n = atoi( argv[4] );
+   //cout << endl << "n: " << n;
+   //cout << endl << "d: " << d;
+         
+   //set sizes for correlation matrix and simulation matrix
+   corrSize = d*d;
+   simSize = n*d;
 
-      else{
+  //meat of program goes here
+    //first allocate memory for arrays and struct
+  cudaMallocManaged( &corrMatrix, d*d*sizeof(double) );
+  cudaMallocManaged( &simMatrix, n*d*sizeof(double) );
+  cudaMallocManaged( &( dists.distKey ), d*sizeof(int) );
+  cudaMallocManaged( &( dists.params ), d*sizeof(float*) );
 
-        strcpy( corrFileName, argv[1] );
-        strcpy( distFileName, argv[2] );
+   //cuda timing
+  cudaEvent_t startTime, endTime;
+  cudaEventCreate( &startTime );
+  cudaEventCreate( &endTime );
+  cudaEventRecord( startTime, 0 );
+     
 
-        cout << endl << "correlations file name: " << corrFileName;
-        cout << endl << "distributions file name: " << distFileName;
+  //Read in correlation matrix from file
+  if( !readFromFile( corrFileName, corrMatrix, corrSize ) ){
+    cout << endl << "Error opening correlation matrix file! ";
+  }
 
-        d = atoi( argv[3] );
-        n = atoi( argv[4] );
-        cout << endl << "n: " << n;
-        cout << endl << "d: " << d;
-      }    
-        //set sizes for correlation matrix and simulation matrix
-        corrSize = d*d;
-        simSize = n*d;
+  //read in distributions from file
+  if( !readDistFile( distFileName, &dists, d ) ){
+    cout << endl << "Error opening Distribution file!";
+  }
 
-        //meat of program goes here
-          //first allocate memory for arrays and struct
-        cudaMallocManaged( &corrMatrix, d*d*sizeof(double) );
-        cudaMallocManaged( &simMatrix, n*d*sizeof(double) );
-        cudaMallocManaged( &( dists.distKey ), d*sizeof(int) );
-        cudaMallocManaged( &( dists.params ), d*sizeof(float*) );
+  //Cholesky decomp of correlation matrix
+  chol( corrMatrix, d, CUBLAS_FILL_MODE_UPPER );
+  //fill array with zeros
+  fillZeros( corrMatrix, d );
+  cout << endl << "Cholesky decomposition complete!";
 
-        //cuda timing
-          cudaEvent_t startTime, endTime;
-          cudaEventCreate( &startTime );
-          cudaEventCreate( &endTime );
-          cudaEventRecord( startTime, 0 );
-           
+  //generate i.i.d random variable matrix
+  int time1 = time(NULL);
+  normGen( simMatrix, simSize, 0.0, 1.0, time1 );
+  cudaDeviceSynchronize();
+  cout << endl << "Normal generation complete!";
+    
+  //multiply cholesky decomp w/ random var matrix to get correlated
+  //random var
+  matMult( simMatrix, corrMatrix, simMatrix, d, n, d );
+  cudaDeviceSynchronize();
+  cout << endl << "Matrix multiplication complete!";
+    
+  //perform inverse probability transformation
+  invTransform<<<grid,block>>>( simMatrix, dists.distKey, dists.params, d, n );
+  cout << endl << "Inverse transformation complete!";
+    
+  //End Timing
+  cudaEventRecord( endTime );
+  cudaEventSynchronize( endTime );
+  float elapsedTime;
+  cudaEventElapsedTime( &elapsedTime, startTime, endTime );
+    
+  //print timing results
+  cout << endl << "The Program took: " << elapsedTime << " milliseconds to run.";   
 
-          //Read in correlation matrix from file
-          while( !readFromFile( corrFileName, corrMatrix, corrSize ) && fileRep ){
-             cout << endl << "Error opening correlation matrix file! ";
-             cout << endl << "Would you like to try again? (y/n)";
-             cin >> userRes;
+  cout << endl << "Please enter in name of file to save";
+  cout << " simulation matrix to: ";
+  cin >> outputFName;
 
-              if( userRes == 'y' | userRes == 'Y'){
-                 cout << endl << "Please enter in filename: ";
-                 cin >> corrFileName;  
-              }
-              else if( userRes == 'n' | userRes == 'N' ){
-                 fileRep = false;
-                 return 0;
-              }
-              else{
-                  cout << endl <<"Please enter in a valid response y or n.";
-              }
-
-          }
-          //read in distributions from file
-          readDistFile( distFileName, &dists, d );
-          cout << endl << "Distribution file read!";
-
-          //Cholesky decomp of correlation matrix
-          chol( corrMatrix, d, CUBLAS_FILL_MODE_UPPER );
-          //fill array with zeros
-          fillZeros( corrMatrix, d );
-
-          cout << endl << "Cholesky decomposition complete!";
-          //generate i.i.d random variable matrix
-          int time1 = time(NULL);
-          normGen( simMatrix, simSize, 0.0, 1.0, time1 );
-          cudaDeviceSynchronize();
-          cout << endl << "Normal generation complete!";
-          
-          //multiply cholesky decomp w/ random var matrix to get correlated
-          //random var
-          matMult( simMatrix, corrMatrix, simMatrix, d, n, d );
-          cudaDeviceSynchronize();
-          cout << endl << "Matrix multiplication complete!";
-          
-          //perform inverse probability transformation
-          invTransform<<<grid,block>>>
-                        ( simMatrix, dists.distKey, dists.params, d, n );
-          cout << endl << "Inverse transformation complete!";
-          
-          //End Timing
-          cudaEventRecord( endTime );
-          cudaEventSynchronize( endTime );
-          float elapsedTime;
-          cudaEventElapsedTime( &elapsedTime, startTime, endTime );
-          
-          //print timing results
-          cout << endl << "The Program took: " << elapsedTime << " milliseconds to run.";   
-
-          cout << endl << "Please enter in name of file to save";
-          cout << " simulation matrix to: ";
-          cin >> outputFName;
-
-          if( printMatToFile( outputFName, simMatrix, n, d ) == true ){
-            cout << endl << "Printing matrix to file success!";
-          }
-          else{
-            cout << endl << "Error printing sim matrix to file";
-          }
-
-          do{
-           cout << endl << "Would you like to run program again? (y/n)? ";
-           cin >> userRes;
-
-           if( userRes == 'y' | userRes == 'Y' ){
-              askRepeat = false; 
-              progRepeat = true;
-           }
-
-           else if( userRes == 'n' | userRes == 'N' ){
-              askRepeat = false;
-              progRepeat = false; 
-           }
-           else{
-              cout << endl << "Invalid response, please answer y or n"; 
-           }
+  if( printMatToFile( outputFName, simMatrix, n, d ) == true ){
+    cout << endl << "Printing matrix to file success!";
+  }
+  else{
+    cout << endl << "Error printing sim matrix to file";
+  }
 
 
-        }while( askRepeat );
+  //free memory
+  cudaFree( corrMatrix );
+  cudaFree( simMatrix );
+  cudaFree( dists.distKey );
+  for( int i = 0; i < d; i++ ){
+     cudaFree( dists.params[i] ); 
+  } 
 
-       //free memory
-       cudaFree( corrMatrix );
-       cudaFree( simMatrix );
-       cudaFree( dists.distKey );
-       for( int i = 0; i < d; i++ ){
-          cudaFree( dists.params[i] ); 
-       } 
+  cudaFree( dists.params );
 
-       cudaFree( dists.params );
 
-    }while( progRepeat == true );
-    return 0;
+  return 0;
 }
 
 /////////////////// Function Implementation ///////////////////////////////////
