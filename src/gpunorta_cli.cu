@@ -53,7 +53,7 @@ int main(int argc, char const *argv[])
     char distFileName[60];
     char outputFName[60];
     char userRes;
-    int d, n;
+    int d, n, seed;
     double* corrMatrix;
     double* simMatrix;
     int corrSize, simSize;
@@ -73,6 +73,7 @@ int main(int argc, char const *argv[])
 
    d = atoi( argv[3] );
    n = atoi( argv[4] );
+   seed = atoi( argv[5] );
    //cout << endl << "n: " << n;
    //cout << endl << "d: " << d;
          
@@ -111,8 +112,8 @@ int main(int argc, char const *argv[])
   cout << endl << "Cholesky decomposition complete!";
 
   //generate i.i.d random variable matrix
-  int time1 = time(NULL);
-  normGen( simMatrix, simSize, 0.0, 1.0, time1 );
+  //int time1 = time(NULL);
+  normGen( simMatrix, simSize, 0.0, 1.0, seed );
   cudaDeviceSynchronize();
   cout << endl << "Normal generation complete!";
     
