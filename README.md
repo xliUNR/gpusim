@@ -18,5 +18,5 @@ output file name is the file name of the simulation matrix file that will be gen
 <br /> There is a space between each argument.
 
 call goes like this: <br />
-       gpusim ../test_corr_matrix_d=20501.txt ../betar20501.csv 20501 2000 154224
+       gpusim ../test_corr_matrix_d=20501.txt ../betar20501.csv 20501 2000 154224 simOutputFile
 
