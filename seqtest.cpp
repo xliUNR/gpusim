@@ -17,7 +17,7 @@ const int MAX = 100;
 
 void seqChol( double*, int );
 //void Cholesky_Decomposition(int* ,int);
-
+void seqMatrixMult(double*, double*, double*, int, int, int );
 int main(int argc, char const *argv[])
 {
    int n = 3;
@@ -67,5 +67,18 @@ void seqChol( double* inMat, int n ){
    }
 
    delete [] lower;
+}
+
+
+void seqMatrixMult(double* matA, double* matB, double* outMat, 
+                                          int outRows, int outCols, int colA ){
+   for(int i = 0; i < outRows; i++){
+      for(int j = 0; j < outCols; j++ ){
+         outMat[ i*outCols + j ] = 0;
+         for(int k = 0; k < colA; k++){
+            outMat[ i*outCols + j ] += matA [i*colA + k] * matB[k*outCols+ j];
+         }
+      }
+   }
 }
 
