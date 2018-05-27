@@ -20,6 +20,7 @@
 #include <random>
 #include "cudaFuncs.h"
 #include "stats.hpp"
+#include "book.h"
 
 using namespace std;
 
@@ -96,53 +97,148 @@ int main(int argc, char const *argv[])
   cudaMallocManaged( &( dists.distKey ), d*sizeof(int) );
   cudaMallocManaged( &( dists.params ), d*sizeof(float*) );
 
-   //cuda timing
-  cudaEvent_t startTime, endTime;
-  cudaEventCreate( &startTime );
-  cudaEventCreate( &endTime );
-  cudaEventRecord( startTime, 0 );
-     
+                    //Read in correlation matrix 
+///////////////////////////////////////////////////////////////////////////////
+   //start timing for correlation matrix read
+  cudaEvent_t corrReadStart, corrReadEnd;
+  cudaEventCreate( &corrReadStart );
+  cudaEventCreate( &corrReadEnd );
+  cudaEventRecord( corrReadStart, 0 );  
 
   //Read in correlation matrix from file
   if( !readFromFile( corrFileName, corrMatrix, corrSize ) ){
     cout << endl << "Error opening correlation matrix file! ";
   }
 
+  //End Timing
+  cudaEventRecord( corrReadEnd, 0 );
+  cudaEventSynchronize( corrReadEnd );
+  float corrReadTime;
+  cudaEventElapsedTime( &corrReadTime, corrReadStart, corrReadEnd );
+  cout << endl << "Reading correlation file timing: ";
+  cout << corrReadTime << " ms." << endl;
+///////////////////////////////////////////////////////////////////////////////
+
+ 
+                    //Read in distribution file
+///////////////////////////////////////////////////////////////////////////////
+  //start timing for correlation matrix read
+  cudaEvent_t distReadStart, distReadEnd;
+  cudaEventCreate( &distReadStart );
+  cudaEventCreate( &distReadEnd );
+  cudaEventRecord( distReadStart, 0 );
+
   //read in distributions from file
   if( !readDistFile( distFileName, &dists, d ) ){
     cout << endl << "Error opening Distribution file!";
   }
 
+  //End Timing
+  cudaEventRecord( distReadEnd, 0 );
+  cudaEventSynchronize( distReadEnd );
+  float distReadTime;
+  cudaEventElapsedTime( &distReadTime, distReadStart, distReadEnd );
+  cout << endl << "Reading distributions file timing: " ;
+  cout << distReadTime << " ms." << endl;
+///////////////////////////////////////////////////////////////////////////////
+
+
+                    //Cholesky decomposition
+///////////////////////////////////////////////////////////////////////////////
+  cudaEvent_t cholStart, cholEnd;
+  cudaEventCreate( &cholStart ); 
+  cudaEventCreate( &cholEnd );
+  cudaEventRecord( cholStart, 0 ); 
   //Cholesky decomp of correlation matrix
   chol( corrMatrix, d, CUBLAS_FILL_MODE_UPPER );
   //fill array with zeros
   fillZeros( corrMatrix, d );
   cout << endl << "Cholesky decomposition complete!";
 
+  cudaEventRecord( cholEnd, 0);
+  cudaEventSynchronize( cholEnd );
+  float cholTime;
+  cudaEventElapsedTime( &cholTime, cholStart, cholEnd );
+  cout << endl << "Cholesky decomposition timing: " ;
+  cout << cholTime << " ms." << endl;
+
+///////////////////////////////////////////////////////////////////////////////
+
+
+                    //random normal generation
+///////////////////////////////////////////////////////////////////////////////
+  cudaEvent_t randStart, randEnd;
+  cudaEventCreate( &randStart ); 
+  cudaEventCreate( &randEnd );
+  cudaEventRecord( randStart, 0 );  
+
   //generate i.i.d random variable matrix
   //int time1 = time(NULL);
   normGen( simMatrix, simSize, 0.0, 1.0, seed );
   cudaDeviceSynchronize();
   cout << endl << "Normal generation complete!";
-    
+
+  cudaEventRecord( randEnd, 0);
+  cudaEventSynchronize( randEnd );
+  float randTime;
+  cudaEventElapsedTime( &randTime, randStart, randEnd );
+  cout << endl << "Random normal generation timing: ";
+  cout << randTime << " ms." << endl;
+///////////////////////////////////////////////////////////////////////////////
+
+
+                    //Matrix multiplication
+///////////////////////////////////////////////////////////////////////////////
+  cudaEvent_t multStart, multEnd;
+  cudaEventCreate( &multStart );
+  cudaEventCreate( &multEnd );
+  cudaEventRecord( multStart, 0 );  
+
   //multiply cholesky decomp w/ random var matrix to get correlated
   //random var
   matMult( simMatrix, corrMatrix, simMatrix, d, n, d );
   cudaDeviceSynchronize();
   cout << endl << "Matrix multiplication complete!";
-    
+  cudaEventRecord( multEnd, 0);
+  cudaEventSynchronize( multEnd );
+  float multTime;
+  cudaEventElapsedTime( &multTime, multStart, multEnd );
+  cout << endl << "Matrix multiplication timing: ";
+  cout << multTime << " ms." << endl;
+///////////////////////////////////////////////////////////////////////////////
+
+
+                    //Inverse transformation 
+///////////////////////////////////////////////////////////////////////////////
+  cudaEvent_t invStart, invEnd;
+  cudaEventCreate( &invStart );
+  cudaEventCreate( &invEnd );
+  cudaEventRecord( invStart, 0 );
+
   //perform inverse probability transformation
   invTransform<<<grid,block>>>( simMatrix, dists.distKey, dists.params, d, n );
+  HANDLE_ERROR( cudaPeekAtLastError() );
+  HANDLE_ERROR( cudaDeviceSynchronize() );
   cout << endl << "Inverse transformation complete!";
+  cudaEventRecord( invEnd, 0 );
+  cudaEventSynchronize( invEnd );
+  float invTime;
+  cudaEventElapsedTime( &invTime, invStart, invEnd );
+  cout << endl << "Inverse transformation timing: ";
+  cout << invTime << " ms." << endl;  
+  
     
-  //End Timing
-  cudaEventRecord( endTime );
-  cudaEventSynchronize( endTime );
-  float elapsedTime;
-  cudaEventElapsedTime( &elapsedTime, startTime, endTime );
-    
-  //print timing results
-  cout << endl << "The Program took: " << elapsedTime << " milliseconds to run.";   
+  //print total timing
+  cout << endl << "The Program took: ";
+  cout << corrReadTime+distReadTime+cholTime+randTime+multTime+invTime;
+  cout << " milliseconds to run.";  
+
+
+///////////////////////////////////////////////////////////////////////////////
+
+
+                //Printing resulting simulation matrix to file
+///////////////////////////////////////////////////////////////////////////////
 
 
   if( printMatToFile( outputFName, simMatrix, n, d ) == true ){
@@ -153,16 +249,21 @@ int main(int argc, char const *argv[])
   }
 
 
-  //free memory
+///////////////////////////////////////////////////////////////////////////////
+
+
+                    //Free memory for end of program
+///////////////////////////////////////////////////////////////////////////////
   cudaFree( corrMatrix );
   cudaFree( simMatrix );
   cudaFree( dists.distKey );
+
   for( int i = 0; i < d; i++ ){
      cudaFree( dists.params[i] ); 
   } 
 
   cudaFree( dists.params );
-
+///////////////////////////////////////////////////////////////////////////////
 
   return 0;
 }

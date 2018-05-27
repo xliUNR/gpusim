@@ -54,7 +54,7 @@ int main( int argc, char const *argv[])
    double* corrMatrix;
    double* simMatrix;
    int n = 2000;
-   int d = 20501;
+   int d = 20;
 
    int simSize = n*d;
    int corrSize = d*d;
@@ -113,7 +113,7 @@ int main( int argc, char const *argv[])
 
 
    //read in distributions file
-   if( readDistFile( r20501distFile, &dists, d) ){
+   if( readDistFile( r20distFile, &dists, d) ){
     cout << endl << "READ DIST FILE SUCCESS!";
    }
    else{
@@ -206,7 +206,7 @@ for(int i = 0; i < 13; i++){
 
 
  //call function to read in from file
- if( readFromFile( r20501file, corrMatrix, corrSize ) ){
+ if( readFromFile( r20file, corrMatrix, corrSize ) ){
    cout << endl << "FILE OPEN SUCCESS!";
  }  
  else{

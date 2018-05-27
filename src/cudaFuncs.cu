@@ -189,7 +189,7 @@ __global__ void invTransform( double* simData, int* distArrPtr,
       simData[ i*d + j ] = invTransformHelper( simData[ i*d + j ], 
                                           distArrPtr[ j ], paramArr[ j ] );
 
-    //printf( "matrix elem: %d data: %f \n", (i*d +tid), simData[ i*d + j ] );
+    //printf( "matrix elem: %d data: %f \n", (i*d +j), simData[ i*d + j ] );
     
 
     }
@@ -276,7 +276,7 @@ __device__ double invTransformHelper( double val, int key, float* paramsArr ){
     case 10:
       //printf(" \n poisson param val1: %f", paramsArr[0] );
       returnVal = stats::qpois( val, paramsArr[0] );
-      //printf("hey 10 worked \n");
+      printf("\n return val: %f", returnVal);
       break;
       
     case 11:
