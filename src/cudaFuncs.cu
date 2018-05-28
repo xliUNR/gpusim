@@ -157,18 +157,18 @@ void matMult( double* matA, double* matB, double* outMat, int m, int n, int k ){
 //function for testing calling stat library from kernel
 __global__ void testFunc( double* inMat, int cols ){
   //int bidx, tid;
-  double temp;
+  //double temp;
   //printf(" \n cols %d", cols );
   //temp = stats::qnorm( inMat[ blockIdx.x * blockDim.x + threadIdx.x ] );
   //grid stride
   int a = 1;
   for( int i = blockIdx.x * blockDim.x + threadIdx.x; i < cols; i+= blockDim.x*gridDim.x ){
-    
-    //inMat[i] = stats::qchisq( inMat[i], 1 );
-    printf("Index: %d | %f ", i, stats::qcauchy(inMat[i], 0.0, 1.0) );
+    inMat[i] = stats::qpois(inMat[i], 1);
+    printf("Index: %d | %f ", i, stats::qpois(inMat[i], 11.5) );
   }
   
 }
+
 
 //function for inverse transform
 __global__ void invTransform( double* simData, int* distArrPtr, 
@@ -189,13 +189,12 @@ __global__ void invTransform( double* simData, int* distArrPtr,
       simData[ i*d + j ] = invTransformHelper( simData[ i*d + j ], 
                                           distArrPtr[ j ], paramArr[ j ] );
 
-    //printf( "matrix elem: %d data: %f \n", (i*d +j), simData[ i*d + j ] );
+    printf( "matrix elem: %d data: %f \n", (i*d +j), simData[ i*d + j ] );
     
 
     }
-    //reset tid everytime block is strided over
     //printf( "\n Value of i: %d", i );
-    //first find cdf for normal dist
+    
   }
 }
 
@@ -275,8 +274,9 @@ __device__ double invTransformHelper( double val, int key, float* paramsArr ){
       
     case 10:
       //printf(" \n poisson param val1: %f", paramsArr[0] );
+      //printf("\n Before: %f, param: %f", val, paramsArr[0] );
       returnVal = stats::qpois( val, paramsArr[0] );
-      printf("\n return val: %f", returnVal);
+      //printf("\n return val: %f", returnVal);
       break;
       
     case 11:

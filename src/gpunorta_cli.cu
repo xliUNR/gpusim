@@ -48,6 +48,10 @@ bool printMatToFile(char* , double* , int , int );
 void seqChol( double*, int );
 //This function takes in a matrix and generates random numbers from normal dist
 void seqNormGen( double*, int, int, int );
+//This function does sequential matrix multiplication
+void seqMatrixMult(double* , double* , double* , int , int , int );
+//This function performs inverse transformation sequentially
+void seqInvTransform( double* , int* , float** , int , int );
 //This is the helper function for sequential inverse transform
 double seqInvTransformHelper( double, int, float* );
 
@@ -62,6 +66,8 @@ int main(int argc, char const *argv[])
     int d, n, seed;
     double* corrMatrix;
     double* simMatrix;
+    double* seqCorrMat;
+    double* seqSimMat;
     int corrSize, simSize;
     distStruct dists;
 
@@ -96,6 +102,8 @@ int main(int argc, char const *argv[])
   cudaMallocManaged( &simMatrix, n*d*sizeof(double) );
   cudaMallocManaged( &( dists.distKey ), d*sizeof(int) );
   cudaMallocManaged( &( dists.params ), d*sizeof(float*) );
+  cudaMallocManaged( &seqCorrMat, d*d*sizeof(double) );
+  cudaMallocManaged( &seqSimMat, n*d*sizeof(double) );
 
                     //Read in correlation matrix 
 ///////////////////////////////////////////////////////////////////////////////
@@ -141,9 +149,118 @@ int main(int argc, char const *argv[])
   cout << endl << "Reading distributions file timing: " ;
   cout << distReadTime << " ms." << endl;
 ///////////////////////////////////////////////////////////////////////////////
+cout << endl << endl << endl;
+
+/*cout << "Testing for poisson: " << endl;
+cout << stats::qpois(0.1, 11.5);
+
+cout << endl << "GPU poisson: " << endl;
+double vval[3] = {0.1, 0.1, 0.1};
+double* dval;
 
 
-                    //Cholesky decomposition
+cudaMallocManaged( &dval, 3*sizeof(double) );
+cudaMemcpy( dval, vval, 3*sizeof(double), cudaMemcpyHostToDevice );
+//cout << aval << ' ' << bval << endl ;
+testFunc<<<1,1>>>(dval, 3);
+cout << dval[0] << endl;*/
+
+
+///////////////////////  Sequential implementation  ///////////////////////////
+//copy data from correlation matrix into sequential matrix
+cudaMemcpy( seqCorrMat, corrMatrix, d*d*sizeof(double), cudaMemcpyHostToHost );
+
+
+// Sequential cholesky decomposition
+cudaEvent_t seqCholStart, seqCholEnd;
+cudaEventCreate( &seqCholStart );
+cudaEventCreate( &seqCholEnd );
+cudaEventRecord( seqCholStart, 0 );
+
+seqChol( seqCorrMat, d );
+fillZeros( seqCorrMat, d );
+/*//print results
+for(int i = 0; i < d; i++){
+  for(int j = 0; j < d; j++){
+    cout << seqCorrMat[ i * d + j ] << ' ';
+  }
+  cout << endl;
+}*/
+cudaEventRecord( seqCholEnd, 0 );
+cudaEventSynchronize( seqCholEnd );
+float seqCholTime;
+cudaEventElapsedTime( &seqCholTime, seqCholStart, seqCholEnd );
+cout << endl << "Sequential Cholesky decomposition complete!";
+cout << endl << "CPU Cholesky decomposition timing: " ;
+cout << seqCholTime << " ms." << endl;
+
+
+//Sequential normal generation
+cudaEvent_t seqRandStart, seqRandEnd;
+cudaEventCreate( &seqRandStart );
+cudaEventCreate( &seqRandEnd );
+cudaEventRecord( seqRandStart, 0 );
+
+seqNormGen( seqSimMat, n, d, seed );
+
+cudaEventRecord( seqRandEnd, 0 );
+cudaEventSynchronize( seqRandEnd );
+float seqRandTime;
+cudaEventElapsedTime( &seqRandTime, seqRandStart, seqRandEnd );
+cout << endl << "Sequential random normal generation complete! ";
+cout << endl << "CPU random normal generation timing: " ;
+cout << seqRandTime << " ms." << endl;
+
+
+//Sequential matrix multiplication
+cudaEvent_t seqMultStart, seqMultEnd;
+cudaEventCreate( &seqMultStart );
+cudaEventCreate( &seqMultEnd );
+cudaEventRecord( seqMultStart, 0 );
+/*double A0[3*3] = { 1.0, 2.0, 3.0, 2.0, 5.0, 5.0, 3.0, 5.0, 12.0 };
+double A1[4*3] = {2.0, 5.23, 2.32, 1.23, 54.2, 23.234, 2.0, 5.23, 2.32, 1.23, 54.2, 23.234 };
+double A2[4*3] = {0,0,0,0,0,0,0,0,0,0,0,0};
+seqMatrixMult( A1, A0, A2, 4,3,3);*/
+seqMatrixMult( seqCorrMat, seqSimMat, seqSimMat, n, d, d );
+
+cudaEventRecord( seqMultEnd, 0 );
+cudaEventSynchronize( seqMultEnd );
+float seqMultTime;
+cudaEventElapsedTime( &seqMultTime, seqMultStart, seqMultEnd );
+cout << endl << "Sequential matrix multiplication complete!";
+cout << endl << "CPU matrix multiplication timing: " ;
+cout << seqMultTime << " ms." << endl;
+/*//print results
+for(int i = 0; i < d; i++){
+  for(int j = 0; j < d; j++){
+    cout << seqSimMat[ i * d + j ] << ' ';
+  }
+  cout << endl;
+}*/
+
+
+//sequential inverse transformation 
+cudaEvent_t seqInvStart, seqInvEnd;
+cudaEventCreate( &seqInvStart );
+cudaEventCreate( &seqInvEnd );
+cudaEventRecord( seqInvStart, 0 );
+
+seqInvTransform( seqSimMat, dists.distKey, dists.params, d, n );
+
+cudaEventRecord( seqInvEnd, 0 );
+cudaEventSynchronize( seqInvEnd );
+float seqInvTime;
+cudaEventElapsedTime( &seqInvTime, seqInvStart, seqInvEnd );
+cout << endl << "Sequential inverse transformation complete!";
+cout << endl << "CPU inverse transformation timing: " ;
+cout << seqInvTime << " ms." << endl;
+
+
+
+cout << endl << endl << endl;
+
+////////////////////// Begin GPU program  /////////////////////////////////////
+                    //GPU Cholesky decomposition
 ///////////////////////////////////////////////////////////////////////////////
   cudaEvent_t cholStart, cholEnd;
   cudaEventCreate( &cholStart ); 
@@ -153,19 +270,32 @@ int main(int argc, char const *argv[])
   chol( corrMatrix, d, CUBLAS_FILL_MODE_UPPER );
   //fill array with zeros
   fillZeros( corrMatrix, d );
-  cout << endl << "Cholesky decomposition complete!";
+  cout << endl << "GPU Cholesky decomposition complete!";
 
   cudaEventRecord( cholEnd, 0);
   cudaEventSynchronize( cholEnd );
   float cholTime;
   cudaEventElapsedTime( &cholTime, cholStart, cholEnd );
-  cout << endl << "Cholesky decomposition timing: " ;
+  cout << endl << "GPU Cholesky decomposition timing: " ;
   cout << cholTime << " ms." << endl;
 
+  cout << endl << "GPU Cholesky decomposition complete!";
+
+
+/*//check results
+for(int i = 0; i < d; i++){
+  for(int j = 0; j < d; j++){
+    if( seqCorrMat[i*d+j] != corrMatrix[i*d+j ] ){
+      cout << "Element: " << i*d+j << "does not match" ;
+      cout << "seq: " << seqCorrMat[i*d+j] << ' ' ;
+      cout << "GPU: " << corrMatrix[i*d+j] << endl;
+    }
+  }
+}*/
 ///////////////////////////////////////////////////////////////////////////////
 
 
-                    //random normal generation
+                    //GPU random normal generation
 ///////////////////////////////////////////////////////////////////////////////
   cudaEvent_t randStart, randEnd;
   cudaEventCreate( &randStart ); 
@@ -176,18 +306,18 @@ int main(int argc, char const *argv[])
   //int time1 = time(NULL);
   normGen( simMatrix, simSize, 0.0, 1.0, seed );
   cudaDeviceSynchronize();
-  cout << endl << "Normal generation complete!";
+  cout << endl << "GPU Normal generation complete!";
 
   cudaEventRecord( randEnd, 0);
   cudaEventSynchronize( randEnd );
   float randTime;
   cudaEventElapsedTime( &randTime, randStart, randEnd );
-  cout << endl << "Random normal generation timing: ";
+  cout << endl << "GPU Random normal generation timing: ";
   cout << randTime << " ms." << endl;
 ///////////////////////////////////////////////////////////////////////////////
 
 
-                    //Matrix multiplication
+                    //GPU Matrix multiplication
 ///////////////////////////////////////////////////////////////////////////////
   cudaEvent_t multStart, multEnd;
   cudaEventCreate( &multStart );
@@ -198,17 +328,17 @@ int main(int argc, char const *argv[])
   //random var
   matMult( simMatrix, corrMatrix, simMatrix, d, n, d );
   cudaDeviceSynchronize();
-  cout << endl << "Matrix multiplication complete!";
+  cout << endl << "GPU Matrix multiplication complete!";
   cudaEventRecord( multEnd, 0);
   cudaEventSynchronize( multEnd );
   float multTime;
   cudaEventElapsedTime( &multTime, multStart, multEnd );
-  cout << endl << "Matrix multiplication timing: ";
+  cout << endl << "GPU Matrix multiplication timing: ";
   cout << multTime << " ms." << endl;
 ///////////////////////////////////////////////////////////////////////////////
 
 
-                    //Inverse transformation 
+                    //GPU Inverse transformation 
 ///////////////////////////////////////////////////////////////////////////////
   cudaEvent_t invStart, invEnd;
   cudaEventCreate( &invStart );
@@ -219,19 +349,16 @@ int main(int argc, char const *argv[])
   invTransform<<<grid,block>>>( simMatrix, dists.distKey, dists.params, d, n );
   HANDLE_ERROR( cudaPeekAtLastError() );
   HANDLE_ERROR( cudaDeviceSynchronize() );
-  cout << endl << "Inverse transformation complete!";
+  cout << endl << "GPU Inverse transformation complete!";
   cudaEventRecord( invEnd, 0 );
   cudaEventSynchronize( invEnd );
   float invTime;
   cudaEventElapsedTime( &invTime, invStart, invEnd );
-  cout << endl << "Inverse transformation timing: ";
+  cout << endl << "GPU Inverse transformation timing: ";
   cout << invTime << " ms." << endl;  
   
     
-  //print total timing
-  cout << endl << "The Program took: ";
-  cout << corrReadTime+distReadTime+cholTime+randTime+multTime+invTime;
-  cout << " milliseconds to run.";  
+ 
 
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -239,7 +366,10 @@ int main(int argc, char const *argv[])
 
                 //Printing resulting simulation matrix to file
 ///////////////////////////////////////////////////////////////////////////////
-
+  cudaEvent_t outStart, outEnd;
+  cudaEventCreate( &outStart );
+  cudaEventCreate( &outEnd );
+  cudaEventRecord( outStart, 0 );
 
   if( printMatToFile( outputFName, simMatrix, n, d ) == true ){
     cout << endl << "Printing matrix to file success!";
@@ -248,14 +378,30 @@ int main(int argc, char const *argv[])
     cout << endl << "Error printing sim matrix to file";
   }
 
+  cudaEventRecord( outEnd, 0 );
+  cudaEventSynchronize( outEnd );
+  float outTime;
+  cudaEventElapsedTime( &outTime, outStart, outEnd );
+  cout << endl << "Printing final matrix to file timing: ";
+  cout << outTime << " ms." << endl;
 
 ///////////////////////////////////////////////////////////////////////////////
 
+  //print total timing
+  cout << endl << "The CPU took: ";
+  cout << corrReadTime+distReadTime+seqCholTime+seqRandTime+seqMultTime+invTime+outTime;
+  cout << " milliseconds to run. ";
+
+  cout << endl << endl << "The GPU Program took: ";
+  cout << corrReadTime+distReadTime+cholTime+randTime+multTime+invTime+outTime;
+  cout << " milliseconds to run."; 
 
                     //Free memory for end of program
 ///////////////////////////////////////////////////////////////////////////////
   cudaFree( corrMatrix );
   cudaFree( simMatrix );
+  cudaFree( seqCorrMat );
+  cudaFree( seqSimMat );
   cudaFree( dists.distKey );
 
   for( int i = 0; i < d; i++ ){
@@ -499,6 +645,17 @@ void seqNormGen( double* mat, int rows, int cols, int seed ){
    }
 }
 
+void seqInvTransform( double* inMat, int* distArrPtr, float** paramArr, int d, int n ){
+   for( int i = 0; i < n; i++ ){
+      for(int j = 0; j < d; j++ ){
+         inMat[ i*d + j ] = normcdf( inMat[ i*d + j ] );
+         inMat[ i*d + j ] = seqInvTransformHelper( inMat[ i*d + j ], 
+                                             distArrPtr[ j ], paramArr[ j ]);
+      }
+   }   
+}
+
+
 //helper function that calls stats package functions and returns calc'd value
 double seqInvTransformHelper( double val, int key, float* paramsArr ){
   double returnVal;
@@ -602,13 +759,4 @@ double seqInvTransformHelper( double val, int key, float* paramsArr ){
   return returnVal;
 }
 
-void seqInvTransform( double* inMat, int* distArrPtr, float** paramArr, int d, int n ){
-   for( int i = 0; i < n; i++ ){
-      for(int j = 0; j < d; j++ ){
-         inMat[ i*d + j ] = normcdf( inMat[ i*d + j ] );
-         inMat[ i*d + j ] = seqInvTransformHelper( inMat[ i*d + j ], 
-                                             distArrPtr[ j ], paramArr[ j ]);
-      }
-   }   
-}
 
