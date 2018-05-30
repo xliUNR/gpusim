@@ -1,9 +1,8 @@
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////   This is the GPU version of NORTA   //////////////////////////
 ///////////////////// Written by Eric Li //////////////////////////////////////
+///////////////////// and AG Schissler ////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
-
-
 
 /////////////////////////////  Includes  //////////////////////////////////////
 #include <cstdlib>
@@ -21,6 +20,7 @@
 #include "cudaFuncs.h"
 #include "stats.hpp"
 #include "book.h"
+#include "boost/math/distributions.hpp" // for all distributions
 
 using namespace std;
 
@@ -762,7 +762,8 @@ void seqInvTransform( double* inMat, int* distArrPtr, float** paramArr, int d, i
    }   
 }
 
-
+//this should be done in a more general way (dynamically finds distr) AG Schissler, 30 May 2018
+//now trying the boost library instead of stats
 //helper function that calls stats package functions and returns calc'd value
 double seqInvTransformHelper( double val, int key, float* paramsArr ){
   double returnVal;
@@ -838,7 +839,9 @@ double seqInvTransformHelper( double val, int key, float* paramsArr ){
       
     case 10:
       //printf(" \n poisson param val1: %f", paramsArr[0] );
-      returnVal = stats::qpois( val, paramsArr[0] );
+      // returnVal = stats::qpois( val, paramsArr[0] );
+      returnVal = quantile(poisson(RealType mean = paramsArr[0]), val);
+      // returnVal = stats::qpois( val, paramsArr[0] );
       //printf("hey 10 worked \n");
       break;
       
