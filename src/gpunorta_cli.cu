@@ -20,7 +20,8 @@
 #include "cudaFuncs.h"
 #include "stats.hpp"
 #include "book.h"
-#include "boost/math/distributions.hpp" // for all distributions
+#include "boost/math/distributions/poisson.hpp"
+#include "boost/math/distributions/students_t.hpp"
 
 using namespace std;
 
@@ -767,6 +768,9 @@ void seqInvTransform( double* inMat, int* distArrPtr, float** paramArr, int d, i
 //helper function that calls stats package functions and returns calc'd value
 double seqInvTransformHelper( double val, int key, float* paramsArr ){
   double returnVal;
+  // needs a constructor for boost distribution AG Schissler
+  // this doesn't work well with switch
+  boost::math::poisson myDist(paramsArr[0]);
   //int nTrials = 7;
   switch( key ){
     case 0:
@@ -840,8 +844,8 @@ double seqInvTransformHelper( double val, int key, float* paramsArr ){
     case 10:
       //printf(" \n poisson param val1: %f", paramsArr[0] );
       // returnVal = stats::qpois( val, paramsArr[0] );
-      returnVal = quantile(poisson(RealType mean = paramsArr[0]), val);
-      // returnVal = stats::qpois( val, paramsArr[0] );
+      returnVal = quantile(myDist, val);
+
       //printf("hey 10 worked \n");
       break;
       
