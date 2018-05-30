@@ -27,7 +27,7 @@ using namespace std;
 
 /////////////////////// Macro Definition  /////////////////////////////////////
 #define SEQUENTIAL 0
-
+#define RUNINVERSE 1
 ///////////////////////////  struct declaration  //////////////////////////////
 //struct of arrays of distribution and their parameters
 
@@ -49,6 +49,8 @@ void fillZeros( double* inMat, int );
 bool printMatToFile(char* , double* , int , int );
 //This function is the sequential version of the cholesky
 void seqChol( double*, int );
+//This function transposes input matrix
+void matrixT(double* inMat, int , int );
 //This function takes in a matrix and generates random numbers from normal dist
 void seqNormGen( double*, int, int, int );
 //This function does sequential matrix multiplication
@@ -66,7 +68,7 @@ int main(int argc, char const *argv[])
     char distFileName[60];
     char outputFName[60];
     char userRes;
-    int d, n, seed, runType;
+    int d, n, seed, runType, invTransFlag;
     double* corrMatrix;
     double* simMatrix;
     int corrSize, simSize;
@@ -91,6 +93,7 @@ int main(int argc, char const *argv[])
    strcpy( outputFName, argv[6] );
 
    runType = atoi( argv[7] );
+   invTransFlag = atoi( argv[8] );
 
          
    //set sizes for correlation matrix and simulation matrix
@@ -150,9 +153,9 @@ int main(int argc, char const *argv[])
   cout << distReadTime << " ms." << endl;
 ///////////////////////////////////////////////////////////////////////////////
 
-/*cout << "Testing for poisson: " << endl;
-cout << stats::qpois(0.1, 11.5);
-
+//cout << "Testing for poisson: " << endl;
+//cout << stats::qpois(0.957525, 1135.52528380604);
+/*
 cout << endl << "GPU poisson: " << endl;
 double vval[3] = {0.1, 0.1, 0.1};
 double* dval;
@@ -214,12 +217,26 @@ if( runType == SEQUENTIAL ){
   cudaEventCreate( &seqMultStart );
   cudaEventCreate( &seqMultEnd );
   cudaEventRecord( seqMultStart, 0 );
-  /*double A0[3*3] = { 1.0, 2.0, 3.0, 2.0, 5.0, 5.0, 3.0, 5.0, 12.0 };
-  double A1[4*3] = {2.0, 5.23, 2.32, 1.23, 54.2, 23.234, 2.0, 5.23, 2.32, 1.23, 54.2, 23.234 };
-  double A2[4*3] = {0,0,0,0,0,0,0,0,0,0,0,0};
-  seqMatrixMult( A1, A0, A2, 4,3,3);*/
-  seqMatrixMult( corrMatrix, simMatrix, simMatrix, n, d, d );
 
+  /*double A0[3*3] = { 1.0, 2.0, 3.0, 2.0, 5.0, 5.0, 3.0, 5.0, 12.0 };
+  double A1[3*4] = {1,2,3,4,5,6,7,8,9,10,11,12};
+  double A2[3*4] = {0,0,0,0,0,0,0,0,0,0,0,0};
+  seqMatrixMult( A0, A1, A1, 3,4,3);
+  for(int i = 0; i < 3; i++){
+    for(int j = 0; j < 4; j++){
+      cout << A1[ i * 4 + j ] << ' ';
+    }
+    cout << endl;
+  }*/
+  
+  seqMatrixMult( corrMatrix, simMatrix, simMatrix, d,n,d );
+  /*for(int i = 0; i < 2; i++){
+    for(int j = 0; j < 3; j++){
+      cout << A0[ i * 3 + j ] << ' ';
+    }
+    cout << endl;
+  }*/
+ 
   cudaEventRecord( seqMultEnd, 0 );
   cudaEventSynchronize( seqMultEnd );
   float seqMultTime;
@@ -237,21 +254,43 @@ if( runType == SEQUENTIAL ){
 ///////////////////////////////////////////////////////////////////////////////
 
 
+///////////////////////////// Matrix transpose ////////////////////////////////
+  cudaEvent_t seqTransStart, seqTransEnd;
+  cudaEventCreate( &seqTransStart );
+  cudaEventCreate( &seqTransEnd );
+  cudaEventRecord( seqTransStart, 0 );
+  
+  matrixT(simMatrix, d, n );
+
+  cudaEventRecord( seqTransEnd, 0 );
+  cudaEventSynchronize( seqTransEnd );
+  float seqTransTime;
+  cudaEventElapsedTime( &seqTransTime, seqTransStart, seqTransEnd );
+  cout << endl << "Sequential matrix transpose complete!";
+  cout << endl << "CPU matrix transpose timing: " ;
+  cout << seqTransTime << " ms." << endl;
+///////////////////////////////////////////////////////////////////////////////
+
+
+float seqInvTime=0;
 //////////////////// sequential inverse transformation ////////////////////////
-  cudaEvent_t seqInvStart, seqInvEnd;
-  cudaEventCreate( &seqInvStart );
-  cudaEventCreate( &seqInvEnd );
-  cudaEventRecord( seqInvStart, 0 );
+  if( invTransFlag == RUNINVERSE ){
+  
+    cudaEvent_t seqInvStart, seqInvEnd;
+    cudaEventCreate( &seqInvStart );
+    cudaEventCreate( &seqInvEnd );
+    cudaEventRecord( seqInvStart, 0 );
 
-  seqInvTransform( simMatrix, dists.distKey, dists.params, d, n );
+    seqInvTransform( simMatrix, dists.distKey, dists.params, d, n );
 
-  cudaEventRecord( seqInvEnd, 0 );
-  cudaEventSynchronize( seqInvEnd );
-  float seqInvTime;
-  cudaEventElapsedTime( &seqInvTime, seqInvStart, seqInvEnd );
-  cout << endl << "Sequential inverse transformation complete!";
-  cout << endl << "CPU inverse transformation timing: " ;
-  cout << seqInvTime << " ms." << endl;
+    cudaEventRecord( seqInvEnd, 0 );
+    cudaEventSynchronize( seqInvEnd );
+    
+    cudaEventElapsedTime( &seqInvTime, seqInvStart, seqInvEnd );
+    cout << endl << "Sequential inverse transformation complete!";
+    cout << endl << "CPU inverse transformation timing: " ;
+    cout << seqInvTime << " ms." << endl;
+  }
 ///////////////////////////////////////////////////////////////////////////////
 
 
@@ -279,8 +318,12 @@ if( runType == SEQUENTIAL ){
 
   //Print total timing
   cout << endl << endl << "The CPU took: ";
-  cout << corrReadTime+distReadTime+seqCholTime+seqRandTime+seqMultTime+seqInvTime+outTime;
-  cout << " milliseconds to run." << endl << endl;  
+  cout << corrReadTime+distReadTime+seqCholTime+seqRandTime+seqMultTime+seqTransTime+seqInvTime+outTime;
+  cout << " milliseconds to run." << endl << endl; 
+  
+  if( !(invTransFlag == RUNINVERSE ) ){
+    cout << "No inverse transformation was performed!" << endl << endl;
+  } 
 }
 
 else{
@@ -362,29 +405,31 @@ for(int i = 0; i < d; i++){
   cout << multTime << " ms." << endl;
 ///////////////////////////////////////////////////////////////////////////////
 
-
+float invTime =0;
                     //GPU Inverse transformation 
 ///////////////////////////////////////////////////////////////////////////////
-  cudaEvent_t invStart, invEnd;
-  cudaEventCreate( &invStart );
-  cudaEventCreate( &invEnd );
-  cudaEventRecord( invStart, 0 );
+  if( invTransFlag == RUNINVERSE ){  
+    cudaEvent_t invStart, invEnd;
+    cudaEventCreate( &invStart );
+    cudaEventCreate( &invEnd );
+    cudaEventRecord( invStart, 0 );
 
-  //perform inverse probability transformation
-  //invTransform<<<grid,block>>>( simMatrix, dists.distKey, dists.params, d, n );
-  //HANDLE_ERROR( cudaPeekAtLastError() );
-  //HANDLE_ERROR( cudaDeviceSynchronize() );
+    //perform inverse probability transformation
+    //invTransform<<<grid,block>>>( simMatrix, dists.distKey, dists.params, d, n );
+    //HANDLE_ERROR( cudaPeekAtLastError() );
+    //HANDLE_ERROR( cudaDeviceSynchronize() );
 
-  //perform inverse step on CPU 
-  seqInvTransform( simMatrix, dists.distKey, dists.params, d, n );
+    //perform inverse step on CPU 
+    seqInvTransform( simMatrix, dists.distKey, dists.params, d, n );
 
-  cout << endl << "GPU Inverse transformation complete!";
-  cudaEventRecord( invEnd, 0 );
-  cudaEventSynchronize( invEnd );
-  float invTime;
-  cudaEventElapsedTime( &invTime, invStart, invEnd );
-  cout << endl << "GPU Inverse transformation timing: ";
-  cout << invTime << " ms." << endl;  
+    cout << endl << "GPU Inverse transformation complete!";
+    cudaEventRecord( invEnd, 0 );
+    cudaEventSynchronize( invEnd );
+    
+    cudaEventElapsedTime( &invTime, invStart, invEnd );
+    cout << endl << "GPU Inverse transformation timing: ";
+    cout << invTime << " ms." << endl;  
+  }  
 ///////////////////////////////////////////////////////////////////////////////
 
 
@@ -414,6 +459,10 @@ for(int i = 0; i < d; i++){
   cout << endl << endl << "The GPU took: ";
   cout << corrReadTime+distReadTime+cholTime+randTime+multTime+invTime+outTime;
   cout << " milliseconds to run." << endl << endl;
+
+  if( !(invTransFlag == RUNINVERSE ) ){
+    cout << "No inverse transformation was performed!" << endl << endl;
+  } 
 }
 
 
@@ -641,16 +690,50 @@ void seqChol( double* inMat, int n ){
    delete [] lower;
 }
 
+void matrixT(double* inMat, int rows, int cols){
+  double* tempMat;
+  tempMat = (double*)malloc( rows*cols*sizeof(double) );
+  
+  for(int i = 0; i < rows; i++ ){
+    for(int j = 0; j < cols; j++){
+      tempMat[ j*rows + i ] = inMat[ i*cols + j ];
+      //cout << "temp index: " << j*rows + i;
+      //cout << "  old index: " << i*cols + j << endl;
+    }
+  }
+
+  //copy over back into original matrix
+  for(int k = 0; k < rows; k++ ){
+    for(int l = 0; l < cols; l++ ){
+      //cout << tempMat[ k*cols + l ];
+      inMat[ k*cols + l ] = tempMat[ k*cols + l ];
+    }
+  }
+  //free memory
+  free( tempMat );
+}
+
 void seqMatrixMult(double* matA, double* matB, double* outMat, 
                                           int outRows, int outCols, int colA ){
-   for(int i = 0; i < outRows; i++){
-      for(int j = 0; j < outCols; j++ ){
-         outMat[ i*outCols + j ] = 0;
-         for(int k = 0; k < colA; k++){
-            outMat[ i*outCols + j ] += matA [i*colA + k] * matB[k*outCols+ j];
-         }
-      }
-   }
+  double* tempMat;
+  tempMat = (double*)malloc( outRows*outCols*sizeof(double) );
+
+  for(int i = 0; i < outRows; i++){
+     for(int j = 0; j < outCols; j++ ){
+        tempMat[ i*outCols + j ] = 0;
+        for(int k = 0; k < colA; k++){
+           tempMat[ i*outCols + j ] += matA[i*colA + k] * matB[k*outCols+ j];
+        }
+     }
+  }
+  //copy results back into output matrix
+  for( int l = 0; l < outRows; l++ ){
+    for( int m = 0; m < outCols; m++ ){
+     outMat[ l*outCols+m ] = tempMat[ l*outCols+m ];
+    } 
+  }
+  //free memory
+  free( tempMat );
 }
 
 void seqNormGen( double* mat, int rows, int cols, int seed ){
@@ -659,7 +742,9 @@ void seqNormGen( double* mat, int rows, int cols, int seed ){
 
    for(int i = 0; i < rows; i++ ){
       for(int j = 0; j < cols; j++ ){
+         //cout << "normal b4: " << mat[i*cols +j] << ' ';
          mat[ i*cols + j ] = distr(generator);
+         //cout << "After: " << mat[i*cols+j] << endl;
       }
    }
 }
@@ -667,10 +752,13 @@ void seqNormGen( double* mat, int rows, int cols, int seed ){
 void seqInvTransform( double* inMat, int* distArrPtr, float** paramArr, int d, int n ){
    for( int i = 0; i < n; i++ ){
       for(int j = 0; j < d; j++ ){
+         //cout << "before normcdf: " << inMat[ i*d + j ] << ' ';
          inMat[ i*d + j ] = normcdf( inMat[ i*d + j ] );
+         //cout << inMat[ i*d + j ] << ' ';
          inMat[ i*d + j ] = seqInvTransformHelper( inMat[ i*d + j ], 
                                              distArrPtr[ j ], paramArr[ j ]);
-      }
+         //cout << "After transform: " << inMat[ i*d + j ] << endl;
+      }  
    }   
 }
 
