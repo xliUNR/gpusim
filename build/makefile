@@ -1,8 +1,8 @@
-CC=/usr/local/cuda-9.0/bin/nvcc
+CC=/usr/local/cuda-9.1/bin/nvcc
 INCLUDES=-I../include
 O_FILES=gpunorta_cli.o cudaFuncs.o
 LIBS = -lcusolver -lcudart -lcurand -lcublas
-LIBDIRS= -L/usr/local/cuda-9.0/lib64
+LIBDIRS= -L/usr/local/cuda-9.1/lib64
 CC_FLAGS= -Xcompiler -fopenmp -g -G -std=c++11 
 all: $(O_FILES)
 	 $(CC) -o gpusim $(O_FILES) $(LIBDIRS) $(LIBS) $(CC_FLAGS) 
