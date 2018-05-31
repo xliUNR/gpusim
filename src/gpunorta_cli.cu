@@ -770,7 +770,8 @@ double seqInvTransformHelper( double val, int key, float* paramsArr ){
   double returnVal;
   // needs a constructor for boost distribution AG Schissler
   // this doesn't work well with switch
-  boost::math::poisson myDist(paramsArr[0]);
+  // the plus a small number handles some all 0 count errors
+  boost::math::poisson myDist(paramsArr[0]+0.0001);
   //int nTrials = 7;
   switch( key ){
     case 0:
