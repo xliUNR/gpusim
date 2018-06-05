@@ -772,8 +772,9 @@ double seqInvTransformHelper( double val, int key, float* paramsArr ){
   // this doesn't work well with switch
   // the plus a small number handles some all 0 count errors
   boost::math::poisson myDist(paramsArr[0]+0.0001);
+  returnVal = quantile(myDist, val);
   //int nTrials = 7;
-  switch( key ){
+  /*switch( key ){
     case 0:
       //printf(" \n value: %f \n", val );
       //printf(" \n beta param val1: %f", paramsArr[0] );
@@ -844,7 +845,7 @@ double seqInvTransformHelper( double val, int key, float* paramsArr ){
       
     case 10:
       //printf(" \n poisson param val1: %f", paramsArr[0] );
-      // returnVal = stats::qpois( val, paramsArr[0] );
+      //returnVal = stats::qpois( val, paramsArr[0] );
       returnVal = quantile(myDist, val);
 
       //printf("hey 10 worked \n");
@@ -869,7 +870,7 @@ double seqInvTransformHelper( double val, int key, float* paramsArr ){
       returnVal = stats::qweibull( val, paramsArr[0], paramsArr[1] );
       //printf("hey 13 worked \n");
       break;                      
-  }
+  }*/
 
   return returnVal;
 }
