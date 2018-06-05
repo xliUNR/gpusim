@@ -18,7 +18,7 @@
 #include <math.h>
 #include <random>
 #include "cudaFuncs.h"
-#include "stats.hpp"
+//#include "stats.hpp"
 #include "book.h"
 #include "boost/math/distributions/poisson.hpp"
 #include "boost/math/distributions/students_t.hpp"
