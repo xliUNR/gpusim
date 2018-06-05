@@ -20,8 +20,8 @@
 #include "cudaFuncs.h"
 #include "stats.hpp"
 #include "book.h"
-#include "boost/math/distributions/poisson.hpp"
-#include "boost/math/distributions/students_t.hpp"
+//#include "boost/math/distributions/poisson.hpp"
+//#include "boost/math/distributions/students_t.hpp"
 
 using namespace std;
 
@@ -771,8 +771,10 @@ double seqInvTransformHelper( double val, int key, float* paramsArr ){
   // needs a constructor for boost distribution AG Schissler
   // this doesn't work well with switch
   // the plus a small number handles some all 0 count errors
-  boost::math::poisson myDist(paramsArr[0]+0.0001);
-  returnVal = quantile(myDist, val);
+  // boost::math::poisson myDist(paramsArr[0]+0.0001);
+  returnVal = stats::qpois( val, paramsArr[0] );
+  
+  //returnVal = quantile(myDist, val);
   //int nTrials = 7;
   /*switch( key ){
     case 0:
