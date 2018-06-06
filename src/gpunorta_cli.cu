@@ -57,9 +57,9 @@ void seqNormGen( double*, int, int, int );
 //This function does sequential matrix multiplication
 void seqMatrixMult(double* , double* , double* , int , int , int );
 //This function performs inverse transformation sequentially
-void seqInvTransform( double* , int* , float** , int , int );
+__host__ void seqInvTransform( double* , int* , float** , int , int );
 //This is the helper function for sequential inverse transform
-double seqInvTransformHelper( double, int, float* );
+__host__ double seqInvTransformHelper( double, int, float* );
 
 
 /////////////////////////// Main Loop  ////////////////////////////////////////
@@ -750,7 +750,7 @@ void seqNormGen( double* mat, int rows, int cols, int seed ){
    }
 }
 
-void seqInvTransform( double* inMat, int* distArrPtr, float** paramArr, int d, int n ){
+__host__ void seqInvTransform( double* inMat, int* distArrPtr, float** paramArr, int d, int n ){
    for( int i = 0; i < n; i++ ){
       for(int j = 0; j < d; j++ ){
          //cout << "before normcdf: " << inMat[ i*d + j ] << ' ';
@@ -766,7 +766,7 @@ void seqInvTransform( double* inMat, int* distArrPtr, float** paramArr, int d, i
 //this should be done in a more general way (dynamically finds distr) AG Schissler, 30 May 2018
 //now trying the boost library instead of stats
 //helper function that calls stats package functions and returns calc'd value
-double seqInvTransformHelper( double val, int key, float* paramsArr ){
+__host__ double seqInvTransformHelper( double val, int key, float* paramsArr ){
   double returnVal;
   // needs a constructor for boost distribution AG Schissler
   // this doesn't work well with switch

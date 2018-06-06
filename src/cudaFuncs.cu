@@ -154,6 +154,8 @@ void matMult( double* matA, double* matB, double* outMat, int m, int n, int k ){
 }
 
 
+/*
+
 //function for testing calling stat library from kernel
 __global__ void testFunc( double* inMat, int cols ){
   //int bidx, tid;
@@ -169,6 +171,9 @@ __global__ void testFunc( double* inMat, int cols ){
   
 }
 
+*/
+
+/*
 
 //function for inverse transform
 __global__ void invTransform( double* simData, int* distArrPtr, 
@@ -198,6 +203,10 @@ __global__ void invTransform( double* simData, int* distArrPtr,
   }
 }
 
+*/
+
+
+/*
 
 //helper function that calls stats package functions and returns calc'd value
 __device__ double invTransformHelper( double val, int key, float* paramsArr ){
@@ -302,3 +311,5 @@ __device__ double invTransformHelper( double val, int key, float* paramsArr ){
 
   return returnVal;
 }
+
+*/
