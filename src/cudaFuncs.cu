@@ -8,9 +8,9 @@
 #include <cusolverDn.h>
 #include <curand.h>
 #include "math.h"
-#include "stats.hpp"
+//#include "stats.hpp"
 
-#define STATS_GO_INLINE
+//#define STATS_GO_INLINE
 
 //This function does the cholesky decomposition
 /* 

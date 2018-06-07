@@ -20,6 +20,11 @@
 #include "cudaFuncs.h"
 #include "stats.hpp"
 #include "book.h"
+#include "statslib.h"
+
+//#include "math/gcem.hpp"
+#define STATS_DONT_USE_OPENMP
+//#define STATS_GO_INLINE
 //#include "boost/math/distributions/poisson.hpp"
 //#include "boost/math/distributions/students_t.hpp"
 
@@ -756,7 +761,7 @@ __host__ void seqInvTransform( double* inMat, int* distArrPtr, float** paramArr,
          //cout << "before normcdf: " << inMat[ i*d + j ] << ' ';
          inMat[ i*d + j ] = normcdf( inMat[ i*d + j ] );
          //cout << inMat[ i*d + j ] << ' ';
-         inMat[ i*d + j ] = seqInvTransformHelper( inMat[ i*d + j ], 
+         inMat[ i*d + j ] = newInvTransformHelp( inMat[ i*d + j ], 
                                              distArrPtr[ j ], paramArr[ j ]);
          //cout << "After transform: " << inMat[ i*d + j ] << endl;
       }  
@@ -772,7 +777,7 @@ __host__ double seqInvTransformHelper( double val, int key, float* paramsArr ){
   // this doesn't work well with switch
   // the plus a small number handles some all 0 count errors
   // boost::math::poisson myDist(paramsArr[0]+0.0001);
-  returnVal = stats::qpois( val, paramsArr[0] );
+ // returnVal = stats::qpois( val, paramsArr[0] );
   
   //returnVal = quantile(myDist, val);
   //int nTrials = 7;
