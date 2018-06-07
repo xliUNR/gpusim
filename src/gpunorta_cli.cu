@@ -18,12 +18,12 @@
 #include <math.h>
 #include <random>
 #include "cudaFuncs.h"
-#include "stats.hpp"
+//#include "stats.hpp"
 #include "book.h"
 #include "statslib.h"
 
 //#include "math/gcem.hpp"
-#define STATS_DONT_USE_OPENMP
+//#define STATS_DONT_USE_OPENMP
 //#define STATS_GO_INLINE
 //#include "boost/math/distributions/poisson.hpp"
 //#include "boost/math/distributions/students_t.hpp"
