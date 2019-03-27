@@ -1,7 +1,9 @@
 # gpusim
-GPU accelerated NORTA
-Project for CS791: GPU programming. 
-This project implements NORTA transformations for generating random variables with given correlation matrix.
+A graphical processing unit accelerated NOrmal To Anything algorithm for high dimensional multivariate simulation
+
+Project for CS791: GPU programming. <br />
+This project implements NORTA transformations for generating random variables with given correlation matrix. <br />
+Presented at ITNG 2019.
 
 
 # How to use program:
