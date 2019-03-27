@@ -15,8 +15,8 @@ n is the number of simulation replicates <br />
 seed is the seed used for random number generator<br />
 output file name is the file name of the simulation matrix file that will be generated at the end of program <br />
 
-runtype is an integer 0 or 1. 0 for sequential run, 1 for parallel GPU. <br />
-inverseflag is an integer 0 or 1. 0 to not run inverse transform, 1 to run inverse transform. <br />
+runtype is an integer. 0 for sequential run, 1 for parallel GPU. <br />
+inverseflag is an integer. 0 to not run inverse transform, 1 to run inverse transform. <br />
 
 <br /> There is a space between each argument.
 
