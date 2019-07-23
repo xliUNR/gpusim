@@ -3,8 +3,9 @@ A graphical processing unit accelerated NOrmal To Anything algorithm for high di
 
 Project for CS791: GPU programming. <br />
 This project implements NORTA transformations for generating random variables with given correlation matrix. <br />
-Presented at ITNG 2019.
+Presented at ITNG 2019. Won best student paper award. </br>
 
+Link to publication: https://link.springer.com/chapter/10.1007/978-3-030-14070-0_46
 
 # How to use program:
 makefile is in build folder. <br />
